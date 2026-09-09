@@ -321,6 +321,139 @@ Features distilled from drumhaus / Drum Loop Studio (concepts only).
 
 ---
 
+### M6: Instrument Modules — Piano, Sampler, DJ Deck, 16×16 Drums
+
+**Goal:** Four performance modules on top of the M0–M5.5 core: a touch
+piano, a real sample-based pad sampler, a 2-deck DJ mixer, and a 16×16
+drum grid. Features follow GarageBand touch instruments, Koala Sampler,
+Mixxx decks, and Novation Launchpad Pro grid concepts (concepts only — no
+code reuse, licenses stay permissive).
+
+Constraint anchors carried into every module:
+
+- ADR-001: all note/hit/deck events schedule on `AudioContext.currentTime`.
+- ADR-010: everything plugs into `engine.stripFor(trackId)`; strips route
+  `input → gain → pan → mute → master` (graph.ts).
+- Dedicated strip IDs: `__piano__`, `__sampler__`, `__decka__`, `__deckb__`
+  (sequencer keeps `__seq__`).
+- Touch-only: targets ≥48px, `touch-action` per widget, pointer capture per
+  element, no hover/right-click dependencies.
+
+#### M6.1 Piano
+
+**Goal:** Multi-touch piano keyboard (synth timbre, zero sample assets)
+playing unsynchronized over the live mix — a performance instrument, not a
+sequencer.
+
+| File | Purpose | Key Contracts |
+|------|---------|---------------|
+| `src/piano/model.ts` | Keyboard model | `PianoModel`, `OCTAVE_MIN/MAX`, octave clamp, `noteLabel()` |
+| `src/audio/pianoVoice.ts` | Synth piano voice | `createPianoVoice(ctx, dest, opts?)`: polyphonic hammer/FM timbre, `noteOn(note, vel, when)`, `noteOff(note, when)`, `allOff()`, max 32 voices |
+| `src/store/piano.ts` | Piano store | `usePiano`: `noteOn/noteOff`, octave, hold (sustain) |
+| `src/ui/components/Piano.tsx` | Touch keyboard | 2-octave screen, ≥48px keys, octave ± and sustain `.seg` chips, per-key pointer capture (multi-touch) |
+
+#### Test Files
+
+| File | Tests |
+|------|-------|
+| `src/piano/__tests__/model.test.ts` | Octave clamp, note label math |
+| `src/audio/__tests__/pianoVoice.test.ts` | noteOn schedules at `when`, noteOff releases, velocity gain, allOff |
+
+#### Acceptance Criteria
+
+- [ ] ≥10 simultaneous keys with independent start/stop times
+- [ ] velocity derived from key-press gesture (ADR-013), no pressure required
+- [ ] sustain holds released notes; octave chips clamp to model range
+- [ ] keys route through `__piano__` strip (mute/pan/gain from Inspector apply)
+
+#### M6.2 Sampler
+
+**Goal:** Sample-based 4×2 pad sampler mirroring Koala pads, chromatic
+mode, and EQUAL/LAZY chopping; reuses the M1 WAV import lane
+(fsAdapter → sha256 → decodeCache → `samples/<hash>.wav`).
+
+| File | Purpose | Key Contracts |
+|------|---------|---------------|
+| `src/sampler/model.ts` | Kit model | `SamplePad { file, name, mode: 'oneshot'\|'loop', start, end, rootNote }`, `SampleKit { pads: SamplePad[] }` |
+| `src/sampler/chop.ts` | Chop math | `computeChops(durationSec, parts, mode: 'equal'\|'lazy')`; lazy snaps to zero-crossings |
+| `src/audio/samplerVoice.ts` | Sample voice | `createSamplerVoice(ctx, dest)`: `trigger(padId, vel, when)`, `playbackRate` for chromatic (±2 oct), `AudioBufferSourceNode.loop` + start/end for loops |
+| `src/store/sampler.ts` | Sampler store | `useSampler`: pads, kit, chromatic toggle, lazy strip `__sampler__` |
+| `src/ui/components/Sampler.tsx` | Pad UI | 4×2 pads, chop mode `.seg` chips, chromatic toggle, per-pad Inspector edit, pad → step-seq export (M6.4) |
+
+#### Test Files
+
+| File | Tests |
+|------|-------|
+| `src/sampler/__tests__/model.test.ts` | Pad add/replace, mode/root defaults |
+| `src/sampler/__tests__/chop.test.ts` | Equal parts, lazy zero-crossing bounds |
+| `src/audio/__tests__/samplerVoice.test.ts` | Trigger at `when`, pitch by rate, loop start/end, 8 simultaneous voices |
+
+#### Acceptance Criteria
+
+- [ ] pads trigger sample-accurate (mock-clock tested)
+- [ ] chromatic playback maps pad → ±24 semitones via `playbackRate`
+- [ ] lazy chops land on zero-crossings; equal chops split duration evenly
+- [ ] imported samples round-trip through `samples/<sha256>.wav` (dedup)
+
+#### M6.3 DJ Deck
+
+**Goal:** Two Mixxx-style decks + crossfader over existing transport: deck
+loads clips/tracks from the project, starts quantized on the grid, EQ
+3-band, hot cues, mini waveform from thumbs. True time-stretch/BPM
+detection is out of scope for M6 (ADR-012) — decks play loops at transport
+tempo, quantized launch reuse from M0.
+
+| File | Purpose | Key Contracts |
+|------|---------|---------------|
+| `src/deck/deck.ts` | Deck player | `Deck`: `load(clip)`, `play()`/`pause()` (bar-quantized via `transport.nextBoundarySec(q)`), `seek(beat)`, `cueAt(beat)`, `loop(beats)` |
+| `src/audio/deckMixer.ts` | Deck bus + crossfader | `createDeckMixer(ctx, dest)`: per-deck 3-band EQ (±12 dB), `crossfade(a→b)` curve, routes `__decka__`/`__deckb__` |
+| `src/store/deck.ts` | Deck store | `useDeck`: deckA/B state, crossfader position, loop/cue markers |
+| `src/ui/components/DJDeck.tsx` | Deck UI | waveform mini (thumbs `drawPeaks`), play/chip, EQ dials (drag-vertical), crossfader ≥48px, cue chips |
+
+#### Test Files
+
+| File | Tests |
+|------|-------|
+| `src/deck/__tests__/deck.test.ts` | Quantized launch, cue set/jump, loop wrapping |
+| `src/audio/__tests__/deckMixer.test.ts` | EQ clamp, crossfader endpoint/center gains |
+
+#### Acceptance Criteria
+
+- [ ] deck start lands on the bar boundary (mock-clocked)
+- [ ] sync aligns deck beat phase to transport; playback rate stays 1.0 (ADR-012)
+- [ ] crossfader at 0 = only A, 1 = only B, 0.5 = −6 dB sum (curve constant-power)
+- [ ] hot cues jump sample-accurately; mini waveform drawn from thumbs peak data
+
+#### M6.4 16×16 Drums
+
+**Goal:** Extend the M5.5 sequencer from 4 kits × 16 steps to 16 voices ×
+16 steps; each row is a voice with either a synth drum (M5.5) or an
+imported sample (M6.2 pads). Launchpad Pro grid feel: velocity-coloured
+pads stay, probability/ratchet/flam/chain unchanged.
+
+| File | Purpose | Key Contracts |
+|------|---------|---------------|
+| `src/sequencer/kits.ts` | Kit bank | `KIT_PRESETS: SynthKit[]` (kick/snare/clap/hat/open-hat/tom/ride/perc/vox), 16 synth voices each |
+| `src/audio/stepVoice.ts` | Voice bus (extend) | `setVoice(i, { synth } \| { sampleSha, buf })`, 16 voices, per-hit new source (polyphony safe) |
+| `src/store/sequencer.ts` | Store (extend) | `SEQUENCER_KIT` → 16 rows, per-row voice assignment, row sample import |
+| `src/ui/components/StepSequencer.tsx` | Grid (extend) | 16×16 pads, row labels/color strip, `touch-action: pan-x`, voice col select |
+
+#### Test Files
+
+| File | Tests |
+|------|-------|
+| `src/sequencer/__tests__/stepSequencer.test.ts` (extend) | 16-voice grid schedules every row hit |
+| `src/sequencer/__tests__/kits.test.ts` | Presets define 16 voices, first row = kick |
+
+#### Acceptance Criteria
+
+- [ ] all 16 rows schedule sample-accurately, incl. simultaneous-row hits
+- [ ] each row: synth voice or imported sample (dedup via sha256)
+- [ ] existing chain/probability/flam/ratchet behavior preserved (regression: M5.5 tests green)
+- [ ] 16×16 grid finger-scrollable, pads ≥48px (tent ≥96px)
+
+---
+
 ## Key Architecture Decisions (ADRs)
 
 | ADR | Decision | Rationale |
@@ -336,6 +469,8 @@ Features distilled from drumhaus / Drum Loop Studio (concepts only).
 | ADR-009 | Ableton Link deferred | Needs native lib, comes with JUCE migration |
 | ADR-010 | Engine interface is swappable | UI depends on interface, not implementation |
 | ADR-011 | B&O preset is placeholder | Must be replaced with own REW measurement |
+| ADR-012 | No user-facing time-stretch in M6 | `playbackRate` shifts pitch; DJ decks sync 1:1 to transport; stretched library playback deferred with JUCE |
+| ADR-013 | Touch velocity is gesture-derived | Tap/scroll speed → velocity (pressure/stylus not available); consistent touch targets |
 
 ---
 
@@ -393,6 +528,16 @@ Features distilled from drumhaus / Drum Loop Studio (concepts only).
 5. Build StepSequencer pads UI + playhead + chain chips
 6. Verify: vitest, typecheck, lint, build
 7. **M5.5 Complete** → commit + tag
+
+### Phase 8: Instrument Modules (M6)
+1. Piano: model + pianoVoice (mock-tested scheduling) + store + touch keyboard
+2. **M6.1 Complete** → commit + tag
+3. Sampler: model + chop math + samplerVoice + store + pad UI
+4. **M6.2 Complete** → commit + tag
+5. DJ deck: deck player + crossfader/EQ bus + store + deck UI
+6. **M6.3 Complete** → commit + tag
+7. 16×16 drums: kits + stepVoice multi-voice + store rows + grid UI
+8. **M6.4 Complete** → commit + tag
 
 ---
 

@@ -145,6 +145,7 @@ interface ClipSchema { id, file, type: 'loop'|'oneshot', lengthBeats, gain, scen
 | M3 | Recording, follow-actions, reverb | recorder, workletCapture, follow, reverb, buffers, wavEncoder |
 | M4 | OSC/MIDI bridge, hinge sensor | osc, oscBridge, midi, hinge, bridge.rs, osc-ws-bridge.mjs |
 | M5 | Timeline, B&O calibration, JUCE spike | timeline, pen, calibration, bfoFlatten, coreClient, spike/ |
+| M6 | Piano, sampler, DJ deck, 16×16 drums | piano, sampler, chop, deck, deckMixer, kits (details in DEVELOPMENT-PLAN: M6) |
 
 ## Constraints
 
