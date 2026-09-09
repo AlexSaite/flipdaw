@@ -90,7 +90,7 @@ function checkPackageLock(ioc: IOCData): Finding[] {
   return findings;
 }
 
-function scanDirectory(dir: string, ioc: IOCData): Finding[] {
+function scanDirectory(_dir: string, _ioc: IOCData): Finding[] {
   const findings: Finding[] = [];
   const nodeModules = join(process.cwd(), 'node_modules');
 
@@ -168,8 +168,9 @@ function scanAgentConfigs(): Finding[] {
     '.vscode/tasks.json',
   ];
 
-  // Zero-width Unicode characters
-  const zeroWidth = /[\u200B\u200C\u200D\uFEFF]/;
+  // Zero-width Unicode characters (ZWJ intentionally included)
+  // eslint-disable-next-line no-misleading-character-class
+  const zeroWidth = /[\u{200B}\u{200C}\u{200D}\u{FEFF}]/u;
 
   for (const config of configs) {
     const fullPath = join(process.cwd(), config);

@@ -1,8 +1,12 @@
 import { useTransport } from '../../store/transport';
 import { useGrid } from '../../store/project';
+import { useSettings } from '../../store/settings';
+import { useUi, type LayoutMode } from '../../store/ui';
+import { getEngine } from '../../audio/engine';
 import { BPM_MIN, BPM_MAX, type Quantize } from '../../audio/transport';
 
 const Q: Quantize[] = ['off', '1/4', '1/2', '1bar', '2bar'];
+const MODES: LayoutMode[] = ['laptop', 'tent', 'mixer'];
 
 export function TransportBar() {
   const playing = useTransport((s) => s.playing);
@@ -11,6 +15,24 @@ export function TransportBar() {
   const setBpm = useTransport((s) => s.setBpm);
   const quantize = useGrid((s) => s.quantize);
   const setQuantize = useGrid((s) => s.setQuantize);
+  const mode = useUi((s) => s.mode);
+  const setMode = useUi((s) => s.setMode);
+  const setSettingsOpen = useUi((s) => s.setSettingsOpen);
+  const setMappingOpen = useUi((s) => s.setMappingOpen);
+  const metroEnabled = useSettings((s) => s.metroEnabled);
+  const set = useSettings((s) => s.set);
+
+  const onTapTempo = (): void => {
+    const e = getEngine();
+    const b = e.tapTempo.tap(e.ctx.currentTime);
+    if (b) setBpm(b);
+  };
+
+  const toggleMetro = (): void => {
+    const on = !useSettings.getState().metroEnabled;
+    set({ metroEnabled: on });
+    getEngine().metronome.setEnabled(on);
+  };
 
   return (
     <header className="transport">
@@ -23,12 +45,25 @@ export function TransportBar() {
           onChange={(e) => setBpm(Number(e.target.value))} />
         <span className="transport__val">{bpm}</span>
       </label>
+      <button className="btn transport__tap" onClick={onTapTempo}>TAP</button>
+      <button className={`btn transport__metro${metroEnabled ? ' is-on' : ''}`} onClick={toggleMetro}>
+        M
+      </button>
       <label className="transport__q">
         Q
         <select value={quantize} onChange={(e) => setQuantize(e.target.value as Quantize)}>
           {Q.map((q) => <option key={q} value={q}>{q}</option>)}
         </select>
       </label>
+      <div className="transport__right">
+        {MODES.map((m) => (
+          <button key={m} className={`btn transport__mode${mode === m ? ' is-on' : ''}`} onClick={() => setMode(m)}>
+            {m}
+          </button>
+        ))}
+        <button className="btn transport__gear" onClick={() => setSettingsOpen(true)} title="Settings">⚙</button>
+        <button className="btn transport__link" onClick={() => setMappingOpen(true)} title="OSC/MIDI">⇄</button>
+      </div>
     </header>
   );
 }

@@ -7,12 +7,14 @@ import type { TrackStrip } from '../audio/graph';
 import { DecodeCache } from '../project/decodeCache';
 import { computePeaks, peaksToJson, type Peaks } from '../project/thumbs';
 import { serializeProject, parseProject } from '../project/io';
+import { rotateAndSave } from '../project/autosave';
 import {
   validateProject, SCHEMA_VERSION,
   type ClipSchema, type ProjectSchema, type TrackSchema,
 } from '../project/schema';
 import type { DirHandle, FsAdapter } from '../project/fsAdapter';
 import { toast } from './toasts';
+import { useHistory } from './history';
 
 export type CellId = string;
 export const cellId = (trackId: string, scene: number): CellId => `${trackId}:${scene}`;
@@ -38,6 +40,30 @@ export interface CellVM {
 
 export type EditorStatus = 'closed' | 'dirty' | 'clean';
 
+/** Metadata snapshot for undo/redo (ADR-006: never audio buffers). */
+export interface ProjectSnapshot {
+  tracks: TrackVM[];
+  sceneCount: number;
+  cellsSnap: Record<CellId, { clip?: ClipSchema; peaks?: Peaks }>;
+  selected: CellId | null;
+  projectName: string;
+}
+
+function takeSnapshot(): ProjectSnapshot {
+  const g = useGrid.getState();
+  const cellsSnap: ProjectSnapshot['cellsSnap'] = {};
+  for (const [id, c] of Object.entries(g.cells)) {
+    if (c.clip || c.peaks) cellsSnap[id] = { clip: c.clip, peaks: c.peaks };
+  }
+  return {
+    tracks: JSON.parse(JSON.stringify(g.tracks)) as TrackVM[],
+    sceneCount: g.sceneCount,
+    cellsSnap,
+    selected: g.selected,
+    projectName: g.projectName,
+  };
+}
+
 interface GridStore {
   tracks: TrackVM[];
   sceneCount: number;
@@ -56,6 +82,7 @@ interface GridStore {
   open(handle: DirHandle, buffer: string): Promise<boolean>;
   save(adapter: FsAdapter): Promise<void>;
   saveAs(adapter: FsAdapter): Promise<void>;
+  autosave(): Promise<void>;
   setDirty(): void;
   clearDirty(): void;
 
@@ -160,6 +187,51 @@ export const useGrid = create<GridStore>((set, get) => {
     set({ cells, players: toPlayerRecord(pm), ready: true });
   }
 
+  /** Restore editable metadata from an undo/redo snapshot. */
+  function applySnapshot(snap: ProjectSnapshot): void {
+    const sceneCount = snap.sceneCount;
+    const e = getEngine();
+    set({ tracks: snap.tracks, sceneCount, selected: snap.selected, projectName: snap.projectName, cells: {}, players: {}, ready: true });
+    ensureStrips();
+    const cells: Record<CellId, CellVM> = {};
+    const pm = new Map<string, ClipPlayer>();
+    for (const t of snap.tracks) {
+      for (let sc = 0; sc < sceneCount; sc++) {
+        const id = cellId(t.id, sc);
+        const snapC = snap.cellsSnap[id];
+        const clip = snapC?.clip;
+        const peaks = snapC?.peaks;
+        const player = e.playerFor(id, t.id);
+        player.onState((state) =>
+          set((s) => ({ cells: { ...s.cells, [id]: { ...s.cells[id], state } } })));
+        if (clip) {
+          const hashName = clip.file.split('/').pop()?.split('.')[0] ?? '';
+          const buf = cache?.peek(hashName);
+          if (buf) { player.attach(buf); player.setGain(clip.gain); }
+        } else {
+          player.detach();
+        }
+        cells[id] = { id, trackId: t.id, scene: sc, state: player.state, clip, peaks };
+        pm.set(id, player);
+      }
+    }
+    players = pm;
+    set({ cells, players: toPlayerRecord(pm), ready: true });
+  }
+
+  /** Push a history entry and mark the doc dirty. */
+  function commit(): void {
+    useHistory.getState().push(takeSnapshot());
+    get().setDirty();
+  }
+
+  function resetHistoryBaseline(): void {
+    const h = useHistory.getState();
+    h.clear();
+    h.setApplier((e) => applySnapshot(e as ProjectSnapshot));
+    h.push(takeSnapshot());
+  }
+
   return {
     tracks: [],
     sceneCount: 4,
@@ -211,6 +283,7 @@ export const useGrid = create<GridStore>((set, get) => {
       }
       players = pm;
       set({ cells, players: toPlayerRecord(pm), editorStatus: 'clean' });
+      resetHistoryBaseline();
       toast.success(`Opened ${p.meta.name}`);
       return true;
     },
@@ -235,23 +308,33 @@ export const useGrid = create<GridStore>((set, get) => {
       toast.success(`Saved as ${h.name}`);
     },
 
+    async autosave() {
+      if (!activeHandle) return;
+      const p = buildProjectFromState();
+      await rotateAndSave(activeHandle, serializeProject(p));
+      if (get().editorStatus === 'dirty') get().clearDirty();
+    },
+
     setTrackGain(id, v) {
       set((s) => ({ tracks: s.tracks.map((t) => t.id === id ? { ...t, gain: v } : t) }));
-      applyMixToStrip(id); get().setDirty();
+      applyMixToStrip(id);
+      commit();
     },
     setTrackPan(id, v) {
       set((s) => ({ tracks: s.tracks.map((t) => t.id === id ? { ...t, pan: v } : t) }));
-      applyMixToStrip(id); get().setDirty();
+      applyMixToStrip(id);
+      commit();
     },
     setTrackMute(id, m) {
       set((s) => ({ tracks: s.tracks.map((t) => t.id === id ? { ...t, muted: m } : t) }));
-      applyMixToStrip(id); get().setDirty();
+      applyMixToStrip(id);
+      commit();
     },
     setTrackSolo(id, s) {
       const tracks = get().tracks.map((t) => t.id === id ? { ...t, solo: s } : t);
       set((state) => ({ ...state, tracks }));
       tracks.forEach((t) => applyMixToStrip(t.id));
-      get().setDirty();
+      commit();
     },
     meter(id) { return strips.get(id)?.meter() ?? 0; },
 
@@ -287,7 +370,7 @@ export const useGrid = create<GridStore>((set, get) => {
         } else if (get().editorStatus !== 'closed') {
           get().setDirty();
         }
-        get().setDirty();
+        commit();
         toast.success(`Imported ${file.name} → ${trackId} / scene ${scene + 1}`);
       } catch (e) {
         toast.error(`Import failed: ${(e as Error).message}`);
@@ -302,6 +385,7 @@ export const useGrid = create<GridStore>((set, get) => {
     async resetToDemo() {
       strips = new Map();
       players = new Map();
+      activeHandle = null;
       const tracks: TrackVM[] = Object.entries(DEMO_COLORS).map(([id, color]) => ({
         id, name: id[0].toUpperCase() + id.slice(1), color,
         gain: 0.9, pan: 0, muted: false, solo: false,
@@ -313,6 +397,7 @@ export const useGrid = create<GridStore>((set, get) => {
         list.forEach((buf, sc) => players.get(cellId(tr, sc))?.attach(buf));
       }
       set({ ready: true });
+      resetHistoryBaseline();
     },
   };
 });

@@ -4,12 +4,16 @@ import { Transport } from './transport';
 import { Scheduler } from './scheduler';
 import { createAudioGraph, type AudioGraph, type TrackStrip } from './graph';
 import { ClipPlayer } from './clipPlayer';
+import { Metronome, createClickSound } from './metronome';
+import { TapTempo } from './tapTempo';
 
 export interface Engine {
   readonly ctx: AudioContext;
   readonly transport: Transport;
   readonly scheduler: Scheduler;
   readonly graph: AudioGraph;
+  readonly metronome: Metronome;
+  readonly tapTempo: TapTempo;
   stripFor(trackId: string): TrackStrip;
   playerFor(cellId: string, trackId: string): ClipPlayer;
   panic(): void;
@@ -29,12 +33,15 @@ export function createEngine(): Engine {
   const scheduler = new Scheduler({ clock: () => ctx.currentTime });
   scheduler.start();
   const graph = createAudioGraph(ctx);
+  const metronome = new Metronome({ transport, playClick: createClickSound(ctx) });
+  scheduler.onTick(() => metronome.tick(ctx.currentTime));
+  const tapTempo = new TapTempo();
 
   const strips = new Map<string, TrackStrip>();
   const players = new Map<string, ClipPlayer>();
 
   const engine: Engine = {
-    ctx, transport, scheduler, graph,
+    ctx, transport, scheduler, graph, metronome, tapTempo,
     stripFor(trackId) {
       let s = strips.get(trackId);
       if (!s) { s = graph.createStrip(); strips.set(trackId, s); }

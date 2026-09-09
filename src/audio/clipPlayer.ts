@@ -54,6 +54,13 @@ export class ClipPlayer {
     if (this._state === 'empty') this.setState('loaded');
   }
 
+  /** Remove the attached buffer (undo of import). */
+  detach(): void {
+    this.panic();
+    this.buffer = null;
+    this.setState('empty');
+  }
+
   setGain(v: number): void {
     this.gainValue = v;
     this.gainNode?.gain.setTargetAtTime(v, this.ctx.currentTime, 0.01);

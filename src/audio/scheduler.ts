@@ -40,6 +40,7 @@ export class Scheduler {
   private timer: ReturnType<typeof setInterval> | null = null;
   private rafId: number | null = null;
   private running = false;
+  private tickFns = new Set<() => void>();
 
   constructor(opts: SchedulerOptions) {
     this.clock = opts.clock;
@@ -62,6 +63,13 @@ export class Scheduler {
   /** Process audio queue: everything in [now, now + ahead). */
   tick(): void {
     this.drain(this.audioQ, this.clock() + this.ahead);
+    this.tickFns.forEach((fn) => fn());
+  }
+
+  /** Subscribe to tick() calls (e.g. metronome scheduling). Returns unsub. */
+  onTick(fn: () => void): () => void {
+    this.tickFns.add(fn);
+    return () => { this.tickFns.delete(fn); };
   }
 
   /** Process UI queue: everything whose time <= now. */
