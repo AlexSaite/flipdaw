@@ -226,17 +226,26 @@ body {
 @keyframes recPulse { 50% { opacity: 0.55; } }
 .transport__right { margin-left: auto; display: flex; align-items: center; gap: 0.35rem; }
 .transport__mode { text-transform: capitalize; }
+.transport__tap.is-on { background: var(--accent); color: #0e1013; }
 .transport__gear, .transport__link { font-size: 1rem; padding: 0.2rem 0.5rem; }
 
+/* Layout switcher (tent/mixer need a way back to laptop) */
+.layout-nav {
+  position: absolute; top: 0.75rem; right: 0.75rem;
+  display: flex; align-items: center; gap: 0.35rem; z-index: 5;
+}
+.layout-nav .transport__mode { min-height: 44px; }
+.layout-nav__hint { font-size: 0.72rem; color: var(--muted); }
+
 /* Tent layout */
-.tent { height: 100%; display: flex; align-items: center; justify-content: center; }
+.tent { position: relative; height: 100%; display: flex; align-items: center; justify-content: center; }
 .tent__grid { display: flex; gap: 1rem; }
 .tent__col { display: flex; flex-direction: column; gap: 1rem; }
 .tent .cell { width: 168px; height: 168px; border-radius: 18px; }
 
 /* Mixer layout */
 .mixer {
-  height: 100%; display: flex; gap: 0.75rem;
+  position: relative; height: 100%; display: flex; gap: 0.75rem;
   padding: 1rem; overflow: auto;
   align-items: flex-end;
 }

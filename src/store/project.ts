@@ -192,6 +192,7 @@ export const useGrid = create<GridStore>((set, get) => {
         const player = e.playerFor(id, t.id);
         player.onState((state) =>
           set((s) => ({ cells: { ...s.cells, [id]: { ...s.cells[id], state } } })));
+        player.setBeatLock(clip?.type === 'loop' ? (clip.lengthBeats ?? null) : null);
         cells[id] = { id, trackId: t.id, scene: sc, state: player.state, clip, peaks };
         pm.set(id, player);
       }
@@ -218,6 +219,7 @@ export const useGrid = create<GridStore>((set, get) => {
         player.onState((state) =>
           set((s) => ({ cells: { ...s.cells, [id]: { ...s.cells[id], state } } })));
         if (clip) {
+          player.setBeatLock(clip.type === 'loop' ? clip.lengthBeats : null);
           const hashName = clip.file.split('/').pop()?.split('.')[0] ?? '';
           const buf = cache?.peek(hashName);
           if (buf) { player.attach(buf); player.setGain(clip.gain); }
@@ -271,6 +273,7 @@ export const useGrid = create<GridStore>((set, get) => {
   function launchScene(targetScene: number): void {
     if (targetScene >= get().sceneCount) { panicPlayers(); return; }
     ensureFollow();
+    let anyStarted = false;
     for (const t of get().tracks) {
       const id = cellId(t.id, targetScene);
       const cell = get().cells[id];
@@ -278,9 +281,12 @@ export const useGrid = create<GridStore>((set, get) => {
       if (!cell?.clip || !p || p.state === 'empty' || p.state === 'queued') continue;
       const res = p.toggle(get().quantize);
       if (res.action === 'start' && res.atSec !== null) {
+        anyStarted = true;
         getEngine().getFollow().sceneStarted(String(targetScene), res.atSec);
       }
     }
+    // A pad launch puts the transport in play — clips drive the show.
+    if (anyStarted && !getEngine().transport.playing) getEngine().transport.start();
   }
 
   function onRecordedBuffer(buf: AudioBuffer, startSec: Seconds, endSec: Seconds): void {
@@ -288,8 +294,12 @@ export const useGrid = create<GridStore>((set, get) => {
     const [trackId, scene] = target.split(':');
     const lengthBeats = Math.max(1, Math.round(((endSec - startSec) * getEngine().transport.bpm) / 60));
     const clip: ClipSchema = { id: target, file: '', type: 'loop', lengthBeats, gain: 1, scene: Number(scene) };
-    const player = players.get(target);
-    if (player) { player.attach(buf); player.setGain(clip.gain); }
+const player = players.get(target);
+    if (player) {
+      player.attach(buf);
+      player.setBeatLock(clip.type === 'loop' ? clip.lengthBeats : null);
+      player.setGain(clip.gain);
+    }
     const peaks = computePeaks(buf, 600);
     set((s) => ({ cells: { ...s.cells, [target]: { ...s.cells[target], clip, peaks } } }));
     commit();
@@ -311,6 +321,7 @@ export const useGrid = create<GridStore>((set, get) => {
     tap: (id) => {
       const res = players.get(id)?.toggle(get().quantize);
       if (res?.action === 'start' && res.atSec !== null) {
+        if (!getEngine().transport.playing) getEngine().transport.start();
         ensureFollow();
         const scene = get().cells[id]?.scene ?? 0;
         getEngine().getFollow().sceneStarted(String(scene), res.atSec);
@@ -351,6 +362,7 @@ export const useGrid = create<GridStore>((set, get) => {
           const player = e.playerFor(id, t.id);
           player.onState((state) =>
             set((s) => ({ cells: { ...s.cells, [id]: { ...s.cells[id], state } } })));
+          player.setBeatLock(clip?.type === 'loop' ? (clip.lengthBeats ?? null) : null);
           cells[id] = { id, trackId: t.id, scene: sc, state: player.state, clip };
           pm.set(id, player);
         }
@@ -433,6 +445,7 @@ export const useGrid = create<GridStore>((set, get) => {
         const clip: ClipSchema = { id: target, file: rel, type, lengthBeats, gain: 1, scene };
         const player = players.get(target);
         if (player) player.attach(buf);
+        player?.setBeatLock(type === 'loop' ? lengthBeats : null);
         const peaks = computePeaks(buf, 600);
         set((s) => ({
           cells: { ...s.cells, [target]: { ...s.cells[target], clip, peaks } },
@@ -512,7 +525,10 @@ export const useGrid = create<GridStore>((set, get) => {
       rebuildCells();
       const pack = await renderDemoLoops();
       for (const [tr, list] of Object.entries(pack)) {
-        list.forEach((buf, sc) => players.get(cellId(tr, sc))?.attach(buf));
+        list.forEach((buf, sc) => {
+          const p = players.get(cellId(tr, sc));
+          if (p) { p.setBeatLock(4); p.attach(buf); } // demo bars are 1 bar @120
+        });
       }
       set({ ready: true });
       resetHistoryBaseline();

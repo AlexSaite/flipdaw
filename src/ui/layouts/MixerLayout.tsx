@@ -1,6 +1,7 @@
 import { useGrid } from '../../store/project';
 import { Fader } from '../components/Fader';
 import { Meter } from '../components/Meter';
+import { LayoutNav } from './LayoutNav';
 
 /** Mixer layout: one horizontal strip per track with fader, pan, M/S, meter. */
 export function MixerLayout() {
@@ -12,6 +13,7 @@ export function MixerLayout() {
 
   return (
     <div className="mixer">
+      <LayoutNav />
       {tracks.map((t) => (
         <div key={t.id} className="mixer__strip" style={{ '--c': t.color } as React.CSSProperties}>
           <div className="mixer__head">{t.name}</div>

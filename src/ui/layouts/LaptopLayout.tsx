@@ -5,14 +5,12 @@ import { Inspector } from '../components/Inspector';
 import { ProjectBar } from '../components/ProjectBar';
 import { Toasts } from '../components/Toasts';
 import { useGrid } from '../../store/project';
-import { getEngine } from '../../audio/engine';
 
 export function LaptopLayout() {
   const ready = useGrid((s) => s.ready);
   const init = useGrid((s) => s.init);
 
   useEffect(() => {
-    getEngine().resume();   // autoplay policy: user gesture is the play button
     void init();
   }, [init]);
 

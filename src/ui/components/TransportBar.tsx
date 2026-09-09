@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { useTransport } from '../../store/transport';
 import { useGrid } from '../../store/project';
 import { useSettings } from '../../store/settings';
@@ -12,6 +13,7 @@ export function TransportBar() {
   const playing = useTransport((s) => s.playing);
   const bpm = useTransport((s) => s.bpm);
   const togglePlay = useTransport((s) => s.togglePlay);
+  const stopAll = useTransport((s) => s.stopAll);
   const setBpm = useTransport((s) => s.setBpm);
   const quantize = useGrid((s) => s.quantize);
   const setQuantize = useGrid((s) => s.setQuantize);
@@ -24,6 +26,12 @@ export function TransportBar() {
   const recordState = useGrid((s) => s.recordState);
   const startRecording = useGrid((s) => s.startRecording);
   const stopRecording = useGrid((s) => s.stopRecording);
+  const [tapFlash, setTapFlash] = useState(false);
+  const tapTimer = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (tapTimer.current !== null) window.clearTimeout(tapTimer.current);
+  }, []);
 
   const onRecord = (): void => {
     if (recordState === 'idle') void startRecording();
@@ -34,6 +42,9 @@ export function TransportBar() {
     const e = getEngine();
     const b = e.tapTempo.tap(e.ctx.currentTime);
     if (b) setBpm(b);
+    setTapFlash(true);
+    if (tapTimer.current !== null) window.clearTimeout(tapTimer.current);
+    tapTimer.current = window.setTimeout(() => setTapFlash(false), 220);
   };
 
   const toggleMetro = (): void => {
@@ -44,16 +55,17 @@ export function TransportBar() {
 
   return (
     <header className="transport">
-      <button className="transport__play" onClick={togglePlay}>
-        {playing ? '■' : '▶'}
+      <button className="transport__play" onClick={togglePlay} title={playing ? 'Pause (pads keep playing in place)' : 'Play'}>
+        {playing ? '⏸' : '▶'}
       </button>
+      <button className="transport__stop" onClick={stopAll} title="Stop all clips">■</button>
       <label className="transport__bpm">
         BPM
         <input type="range" min={BPM_MIN} max={BPM_MAX} value={bpm}
           onChange={(e) => setBpm(Number(e.target.value))} />
         <span className="transport__val">{bpm}</span>
       </label>
-      <button className="btn transport__tap" onClick={onTapTempo}>TAP</button>
+      <button className={`btn transport__tap${tapFlash ? ' is-on' : ''}`} onClick={onTapTempo} title="Tap tempo: tap on the beat 2–5 times to set BPM">TAP</button>
       <button className={`btn transport__record${recordState !== 'idle' ? ' is-on' : ''}`} onClick={onRecord} title="Record loop">
         ●{recordState !== 'idle' && ` ${recordState}`}
       </button>

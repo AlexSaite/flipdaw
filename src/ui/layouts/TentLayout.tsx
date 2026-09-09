@@ -3,6 +3,7 @@ import { useGrid, cellId } from '../../store/project';
 import { Cell } from '../components/Cell';
 import { useSettings } from '../../store/settings';
 import { getEngine } from '../../audio/engine';
+import { LayoutNav } from './LayoutNav';
 
 /** Tent mode: 3×3 big pads, ≥96px, kiosk-feel (no inspector). */
 export function TentLayout() {
@@ -25,6 +26,7 @@ export function TentLayout() {
 
   return (
     <div className="tent">
+      <LayoutNav />
       {!ready ? (
         <div className="laptop__loading">Loading demo…</div>
       ) : (

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { useGrid, type CellId } from '../../store/project';
-import { useTransport } from '../../store/transport';
 import { getEngine } from '../../audio/engine';
 
 const R = 42;
@@ -18,13 +17,13 @@ export function Cell({ id, color, big = false }: CellProps) {
   const selected = useGrid((s) => s.selected === id);
   const tap = useGrid((s) => s.tap);
   const select = useGrid((s) => s.select);
-  const playing = useTransport((s) => s.playing);
   const ringRef = useRef<SVGCircleElement>(null);
   const longRef = useRef<number | null>(null);
 
-  // Progress ring: write to DOM directly from rAF — no React re-renders
+  // Progress ring: write to DOM directly from rAF — no React re-renders.
+  // Runs whenever the clip is playing (pads keep looping through transport pause).
   useEffect(() => {
-    if (state !== 'playing' || !playing) return;
+    if (state !== 'playing') return;
     let raf = 0;
     const loop = (): void => {
       const el = ringRef.current;
@@ -37,7 +36,7 @@ export function Cell({ id, color, big = false }: CellProps) {
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [state, playing, id]);
+  }, [state, id]);
 
   const onDown = (e: React.PointerEvent<HTMLButtonElement>): void => {
     e.currentTarget.setPointerCapture(e.pointerId);

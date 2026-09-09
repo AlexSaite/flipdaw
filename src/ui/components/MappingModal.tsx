@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useUi } from '../../store/ui';
 import { useGrid } from '../../store/project';
 import { toast } from '../../store/toasts';
@@ -18,6 +18,14 @@ export function MappingModal() {
   const [url, setUrl] = useState(DEFAULT_BRIDGE_URL);
   const [connected, setConnected] = useState(() => BRIDGE.connected);
   const [rows, setRows] = useState<OscRow[]>(() => templateRows(BRIDGE.profile.id));
+
+  useEffect(() => {
+    if (!open || BRIDGE.connected) return;
+    const attempt = url || DEFAULT_BRIDGE_URL;
+    void connectDevBridge(BRIDGE, attempt)
+      .then(() => { setConnected(true); toast.success('Dev bridge connected'); })
+      .catch(() => { setConnected(false); toast.error('Dev bridge unreachable — run `node tools/osc-ws-bridge.mjs`'); });
+  }, [open, url]);
 
   if (!open) return null;
 

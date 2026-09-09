@@ -6,6 +6,7 @@ const h = vi.hoisted(() => {
   });
   const fakePlayer = () => ({
     onState: vi.fn(), attach: vi.fn(), detach: vi.fn(), setGain: vi.fn(),
+    setBeatLock: vi.fn(),
     state: 'empty' as const,
   });
   return { fakeStrip, fakePlayer };

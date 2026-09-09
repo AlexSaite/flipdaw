@@ -85,4 +85,21 @@ describe('follow runner (scene follow-actions)', () => {
     expect(events).toHaveLength(0);
     expect(runner.currentScene).toBe('A');
   });
+
+  it('removeAction disarms a pending transition for the active scene', () => {
+    const clock = createMockClock(0);
+    const tr = new Transport(clock, 120);
+    const sch = new Scheduler({ clock: () => clock.currentTime, lookaheadSec: 0.12 });
+    const events: FollowEvent[] = [];
+    const runner = new FollowRunner({ transport: tr, scheduler: sch, onFollow: (e) => events.push(e) });
+
+    runner.setAction('A', { type: 'afterBars', bars: 2 });
+    tr.start();
+    runner.sceneStarted('A', 0.0);      // would fire at t=4.0
+    clock.set(2.0); sch.tick();
+    runner.removeAction('A');           // disable while A is still active
+    expect(runner.currentScene).toBeNull();
+    clock.set(4.0); sch.tick();
+    expect(events).toHaveLength(0);     // nothing must fire
+  });
 });

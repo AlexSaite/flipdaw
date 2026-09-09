@@ -50,6 +50,9 @@ export class FollowRunner {
 
   removeAction(scene: string): void {
     this.actions.delete(scene);
+    // If this scene is active and a transition is already scheduled, disarm it
+    // so disabling the follow-action actually takes effect (no stuck 'next').
+    if (this.activeScene === scene) this.clear();
   }
 
   clear(): void {

@@ -43,6 +43,15 @@ export function getEngine(): Engine {
   return createEngine();
 }
 
+/**
+ * ADR-010 swap seam: replace the engine instance wholesale (e.g. plug the
+ * JUCE core client). The store keeps calling getEngine() — the UI does not
+ * notice the swap. Pass `null` to restore the default engine.
+ */
+export function setEngineOverride(engine: Engine | null): void {
+  instance = engine;
+}
+
 export function createEngine(): Engine {
   const ctx = new AudioContext({ latencyHint: 'interactive' });
   const transport = new Transport(ctx, 120);

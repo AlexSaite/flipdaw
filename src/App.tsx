@@ -9,6 +9,7 @@ import { useHistory } from './store/history';
 import { useSettings } from './store/settings';
 import { useGrid } from './store/project';
 import { getEngine } from './audio/engine';
+import { subscribeTransportToEngine } from './store/transport';
 import { bindBridge } from './bridge/bind';
 
 const MODE_KEYS: Record<string, LayoutMode> = { '1': 'laptop', '2': 'tent', '3': 'mixer' };
@@ -38,12 +39,24 @@ function App() {
   }, [setMode, applyToDom]);
 
   useEffect(() => {
-    void getEngine().resume();
     const s = useSettings.getState();
     getEngine().metronome.setEnabled(s.metroEnabled);
     getEngine().metronome.setGain(s.metroGain);
+    const unsubTransport = subscribeTransportToEngine();
     const unbind = bindBridge();
-    return () => unbind();
+    // Autoplay policy: AudioContext may only start on a user gesture.
+    // Resume once on the first pointer/key/touch event anywhere in the app.
+    const resume = (): void => { void getEngine().resume(); };
+    window.addEventListener('pointerdown', resume, { once: true });
+    window.addEventListener('keydown', resume, { once: true });
+    window.addEventListener('touchstart', resume, { once: true, passive: true });
+    return () => {
+      unsubTransport();
+      unbind();
+      window.removeEventListener('pointerdown', resume);
+      window.removeEventListener('keydown', resume);
+      window.removeEventListener('touchstart', resume);
+    };
   }, []);
 
   // Autosave: rotate-through-backups every N seconds while dirty.

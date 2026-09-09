@@ -37,28 +37,68 @@ export class ClipPlayer {
   private pending: EventHandle | null = null;
   private listeners = new Set<(s: ClipState) => void>();
 
+  /** Musical length in beats — enables tempo-follow via playbackRate. null = fixed tempo. */
+  private beatBeats: number | null = null;
+  private naturalBpm: number | null = null;
+  private unsubTransport: Unsub | null = null;
+
   constructor(o: ClipPlayerOptions) {
     this.ctx = o.ctx;
     this.transport = o.transport;
     this.scheduler = o.scheduler;
     this.strip = o.strip;
     this.fade = o.fadeSec ?? 0.01;
+    // Live tempo-follow: re-tune a playing loop the moment BPM changes.
+    this.unsubTransport = o.transport.subscribe(() => this.applyTempoLive());
   }
 
   get state(): ClipState { return this._state; }
   get lengthSec(): Seconds | null { return this.buffer?.duration ?? null; }
   get attached(): boolean { return this.buffer !== null; }
 
+  /** Current tempo ratio (1 = playback at recorded speed). */
+  get tempoRate(): number {
+    if (this.naturalBpm === null) return 1;
+    return this.transport.bpm / this.naturalBpm;
+  }
+
+  /** Declare how many beats the clip spans (rhythmic length). Re-locks tempo-follow. */
+  setBeatLock(beats: number | null): void {
+    this.beatBeats = beats;
+    this.detectNaturalBpm();
+    this.applyTempoLive();
+  }
+
   attach(buffer: AudioBuffer): void {
     this.buffer = buffer;
+    this.detectNaturalBpm();
     if (this._state === 'empty') this.setState('loaded');
+  }
+
+  private detectNaturalBpm(): void {
+    this.naturalBpm = (this.beatBeats !== null && this.buffer)
+      ? (this.beatBeats * 60) / this.buffer.duration
+      : null;
+  }
+
+  /** Push the current bpm-derived rate onto a playing source (sample-accurate). */
+  private applyTempoLive(): void {
+    if (this._state !== 'playing' || !this.source || this.naturalBpm === null) return;
+    this.source.playbackRate.setValueAtTime(this.tempoRate, this.ctx.currentTime);
   }
 
   /** Remove the attached buffer (undo of import). */
   detach(): void {
     this.panic();
     this.buffer = null;
+    this.naturalBpm = null;
     this.setState('empty');
+  }
+
+  /** Release transport subscription (players are singletons per app run — safe to skip). */
+  dispose(): void {
+    this.unsubTransport?.();
+    this.unsubTransport = null;
   }
 
   setGain(v: number): void {
@@ -119,6 +159,7 @@ export class ClipPlayer {
     const src = this.ctx.createBufferSource();
     src.buffer = this.buffer;
     src.loop = true;
+    src.playbackRate.setValueAtTime(this.tempoRate, t);
     const g = this.ctx.createGain();
     g.gain.value = this.gainValue;
     src.connect(g);
