@@ -6,6 +6,9 @@ import { MAX_STEPS } from '../../sequencer/model';
 import type { StepCell } from '../../sequencer/model';
 
 const LENGTHS = [8, 16, 32];
+const SWING_LEVELS = [0, 0.25, 0.5, 0.75];
+const HUM_LEVELS = [0, 0.15, 0.3, 0.5];
+const pct = (v: number): string => (v === 0 ? 'Off' : `${Math.round(v * 100)}%`);
 
 function velDots(c: StepCell): string {
   if (!c.on) return '';
@@ -17,6 +20,8 @@ function kitClass(i: number): string {
   const k = SEQUENCER_KIT[i % SEQUENCER_KIT.length] ?? 'kit';
   return `seq__pad--${k}`;
 }
+
+const CHIP_COLORS = ['#14b8a6', '#f59e0b', '#8b5cf6', '#ef4444', '#60a5fa', '#84cc16'];
 
 export function StepSequencer() {
   const pattern = useSequencer((s) => s.activePattern());
@@ -69,56 +74,84 @@ export function StepSequencer() {
     setChain(next);
   };
 
+  const chipColor = (id: string): string => {
+    const i = patterns.findIndex((x) => x.id === id);
+    return CHIP_COLORS[Math.max(0, i) % CHIP_COLORS.length];
+  };
+
   return (
     <section className="seq">
       <div className="seq__head">
-        <select value={pattern.id} onChange={(e) => setActive(e.target.value)} className="seq__select">
-          {patterns.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-        <button className="btn" onClick={() => createPattern()} title="New pattern">+</button>
-        <button className="btn" onClick={() => removePattern(pattern.id)} title="Delete pattern" disabled={patterns.length <= 1}>✕</button>
-        <button className={`btn${armed ? ' is-on' : ''}`} onClick={toggleArmed} title="Arm the step sequencer">SEQ</button>
-        <button className={`btn${chainOn ? ' is-on' : ''}`} onClick={toggleChain} title="Loop chain (start→end)">CHAIN</button>
-        <button className="btn" onClick={randomize} title="Randomize steps">🎲</button>
-        <label className="seq__ctl">
-          Len
-          <select value={pattern.length} onChange={(e) => setLength(Number(e.target.value))}>
-            {LENGTHS.map((n) => <option key={n} value={n}>{n}</option>)}
-          </select>
-        </label>
-        <label className="seq__ctl">
-          Swing
-          <input type="range" min={0} max={1} step={0.05} value={pattern.swing}
-            onChange={(e) => setSwing(Number(e.target.value))} />
-          <span className="seq__val">{pattern.swing.toFixed(2)}</span>
-        </label>
-        <label className="seq__ctl">
-          Hum
-          <input type="range" min={0} max={0.5} step={0.05} value={pattern.humanize}
-            onChange={(e) => setHumanize(Number(e.target.value))} />
-          <span className="seq__val">{pattern.humanize.toFixed(2)}</span>
-        </label>
+        <div className="seq__head-group">
+          {patterns.map((p) => (
+            <button
+              key={p.id}
+              className={`seq__pat-chip${p.id === pattern.id ? ' is-on' : ''}`}
+              onClick={() => setActive(p.id)}
+              style={p.id === pattern.id ? { background: chipColor(p.id), borderColor: chipColor(p.id) } : undefined}
+              title={`Select ${p.name}`}
+            >
+              <span className="seq__pat-dot" style={{ background: chipColor(p.id) }} />
+              {p.name}
+            </button>
+          ))}
+          <button className="btn" onClick={() => createPattern()} title="New pattern">+</button>
+          <button className="btn" onClick={() => removePattern(pattern.id)} title="Delete pattern" disabled={patterns.length <= 1}>✕</button>
+          <button className={`btn${armed ? ' is-on' : ''}`} onClick={toggleArmed} title="Arm the step sequencer">SEQ</button>
+          <button className={`btn${chainOn ? ' is-on' : ''}`} onClick={toggleChain} title="Loop chain (start→end)">CHAIN</button>
+          <button className="btn" onClick={randomize} title="Randomize steps">🎲</button>
+        </div>
+
+        <span className="seq__divider" />
+
+        <div className="seq__head-group">
+          <div className="seq__ctl">
+            <span className="seq__ctl-label">Len</span>
+            <div className="seg">
+              {LENGTHS.map((n) => (
+                <button key={n} className={`seg-btn${pattern.length === n ? ' is-on' : ''}`} onClick={() => setLength(n)} title={`${n} steps`}>{n}</button>
+              ))}
+            </div>
+          </div>
+          <div className="seq__ctl">
+            <span className="seq__ctl-label">Swing</span>
+            <div className="seg">
+              {SWING_LEVELS.map((v) => (
+                <button key={v} className={`seg-btn${pattern.swing === v ? ' is-on' : ''}`} onClick={() => setSwing(v)}>{pct(v)}</button>
+              ))}
+            </div>
+          </div>
+          <div className="seq__ctl">
+            <span className="seq__ctl-label">Hum</span>
+            <div className="seg">
+              {HUM_LEVELS.map((v) => (
+                <button key={v} className={`seg-btn${pattern.humanize === v ? ' is-on' : ''}`} onClick={() => setHumanize(v)}>{pct(v)}</button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="seq__pads">
         <div className="seq__playhead" ref={playheadRef} />
         {Array.from({ length: pattern.length }, (_, i) => {
           const c = pattern.steps[i];
+          const lit = c.on;
           return (
             <button
               key={i}
-              className={`seq__pad ${kitClass(i)}${c.on ? ' is-on' : ''}`}
+              className={`seq__pad ${kitClass(i)}${lit ? ' is-on' : ''}`}
+              style={lit && c.probability < 1 ? { opacity: 0.5 + 0.5 * c.probability, filter: 'none' } : undefined}
               onClick={() => onPad(i)}
               title={`Step ${i + 1}${c.on ? ` · vel ${c.velocity}` : ''}`}
             >
-              {c.on && (
+              {lit && (
                 <>
                   <span className="seq__vel" style={{ height: `${Math.round(c.velocity * 100)}%` }} />
                   <span className="seq__dots">{velDots(c)}</span>
                   <span className="seq__mods">
-                    {c.flam > 0 && `F${c.flam}`}
-                    {c.ratchet > 1 && ` r${c.ratchet}`}
-                    {c.probability < 1 && ` ${Math.round(c.probability * 100)}%`}
+                    {c.ratchet > 1 && <span>∞{c.ratchet}</span>}
+                    {c.flam > 0 && <span>≈</span>}
                   </span>
                 </>
               )}

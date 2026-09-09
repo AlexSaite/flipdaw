@@ -77,16 +77,20 @@ export function Inspector() {
 
       <section className="inspector__follow">
         <h4>Follow-action (scene {cell.scene + 1})</h4>
-        <select value={followValue}
-          onChange={(e) => {
-            const v = e.target.value;
-            if (v === '') setFollowAction(cell.scene, null);
-            else if (v === 'next') setFollowAction(cell.scene, { type: 'next' });
-            else if (v === 'stop') setFollowAction(cell.scene, { type: 'stop' });
-            else setFollowAction(cell.scene, { type: 'afterBars', bars: Number(v) });
-          }}>
-          {FOLLOW_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+        <div className="seg seg--wrap seg--follow">
+          {FOLLOW_OPTIONS.map((o) => (
+            <button key={o.value} className={`seg-btn${followValue === o.value ? ' is-on' : ''}`}
+              onClick={() => {
+                const v = o.value;
+                if (v === '') setFollowAction(cell.scene, null);
+                else if (v === 'next') setFollowAction(cell.scene, { type: 'next' });
+                else if (v === 'stop') setFollowAction(cell.scene, { type: 'stop' });
+                else setFollowAction(cell.scene, { type: 'afterBars', bars: Number(v) });
+              }}>
+              {o.label}
+            </button>
+          ))}
+        </div>
         <p className="inspector__muted">{follow ? describe(follow) : 'No follow-action.'}</p>
       </section>
 

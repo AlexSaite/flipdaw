@@ -96,9 +96,10 @@ export const useSequencer = create<SequencerStore>((set, get) => {
       transport: e.transport,
       scheduler: e.scheduler,
       onPatternChanged: (id) => {
-        set({ activeId: id });
         const p = get().findPattern(id);
-        if (p) sequencer?.setPattern(p);
+        if (!p) return; // stale chain entry — keep current pattern
+        set({ activeId: id });
+        sequencer?.setPattern(p);
       },
     });
     e.transport.subscribe((s) => {
@@ -147,8 +148,11 @@ export const useSequencer = create<SequencerStore>((set, get) => {
       const s = get();
       if (s.patterns.length <= 1) return;
       const next = s.patterns.filter((p) => p.id !== id);
-      const activeId = id === s.activeId ? next[0].id : s.activeId;
-      set({ patterns: next, activeId });
+      const chain = s.chain.filter((c) => c.patternId !== id); // drop stale chain hops
+      let activeId = id === s.activeId ? next[0].id : s.activeId;
+      if (chain.length === 0) set({ patterns: next, activeId, chain, chainOn: false });
+      else set({ patterns: next, activeId, chain });
+      activeId = get().activeId;
       const p = next.find((x) => x.id === activeId);
       if (p) sequencer?.setPattern(p);
     },

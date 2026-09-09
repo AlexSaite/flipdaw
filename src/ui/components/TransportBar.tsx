@@ -4,7 +4,7 @@ import { useGrid } from '../../store/project';
 import { useSettings } from '../../store/settings';
 import { useUi, type LayoutMode } from '../../store/ui';
 import { getEngine } from '../../audio/engine';
-import { BPM_MIN, BPM_MAX, type Quantize } from '../../audio/transport';
+import type { Quantize } from '../../audio/transport';
 
 const Q: Quantize[] = ['off', '1/4', '1/2', '1bar', '2bar'];
 const MODES: LayoutMode[] = ['laptop', 'tent', 'mixer'];
@@ -28,10 +28,34 @@ export function TransportBar() {
   const stopRecording = useGrid((s) => s.stopRecording);
   const [tapFlash, setTapFlash] = useState(false);
   const tapTimer = useRef<number | null>(null);
+  const holdTimer = useRef<number | null>(null);
+  const heldRef = useRef(false);
 
   useEffect(() => () => {
     if (tapTimer.current !== null) window.clearTimeout(tapTimer.current);
+    if (holdTimer.current !== null) window.clearInterval(holdTimer.current);
   }, []);
+
+  const step = (dir: number): void => {
+    useTransport.getState().setBpm(useTransport.getState().bpm + dir);
+  };
+
+  /** Single tap = 1 step; press+hold = smooth repeat after 320 ms. */
+  const startHold = (dir: number): void => {
+    stopHold();
+    holdTimer.current = window.setTimeout(() => {
+      heldRef.current = true;
+      step(dir);
+      holdTimer.current = window.setInterval(() => step(dir), 95);
+    }, 320);
+  };
+  const stopHold = (): void => {
+    if (holdTimer.current !== null) { window.clearInterval(holdTimer.current); holdTimer.current = null; }
+  };
+  const onStepClick = (dir: number): void => {
+    if (heldRef.current) { heldRef.current = false; return; } // release of a long press
+    step(dir);
+  };
 
   const onRecord = (): void => {
     if (recordState === 'idle') void startRecording();
@@ -55,16 +79,26 @@ export function TransportBar() {
 
   return (
     <header className="transport">
-      <button className="transport__play" onClick={togglePlay} title={playing ? 'Pause (pads keep playing in place)' : 'Play'}>
-        {playing ? '⏸' : '▶'}
-      </button>
-      <button className="transport__stop" onClick={stopAll} title="Stop all clips">■</button>
-      <label className="transport__bpm">
-        BPM
-        <input type="range" min={BPM_MIN} max={BPM_MAX} value={bpm}
-          onChange={(e) => setBpm(Number(e.target.value))} />
-        <span className="transport__val">{bpm}</span>
+      <label className="transport__playlabel">
+        <button className="transport__play" onClick={togglePlay} title={playing ? 'Pause (pads keep playing in place)' : 'Play'}>
+          {playing ? '⏸' : '▶'}
+        </button>
       </label>
+      <button className="transport__stop" onClick={stopAll} title="Stop all clips">■</button>
+      <div className="transport__bpm">
+        <span className="transport__bpm-label">BPM</span>
+        <button className="transport__step"
+          onPointerDown={(e) => { e.preventDefault(); startHold(-1); }}
+          onPointerUp={stopHold} onPointerLeave={stopHold} onPointerCancel={stopHold}
+          onContextMenu={(e) => e.preventDefault()}
+          onClick={() => onStepClick(-1)} title="Slower">−</button>
+        <span className="transport__val transport__val--big">{bpm}</span>
+        <button className="transport__step"
+          onPointerDown={(e) => { e.preventDefault(); startHold(1); }}
+          onPointerUp={stopHold} onPointerLeave={stopHold} onPointerCancel={stopHold}
+          onContextMenu={(e) => e.preventDefault()}
+          onClick={() => onStepClick(1)} title="Faster">+</button>
+      </div>
       <button className={`btn transport__tap${tapFlash ? ' is-on' : ''}`} onClick={onTapTempo} title="Tap tempo: tap on the beat 2–5 times to set BPM">TAP</button>
       <button className={`btn transport__record${recordState !== 'idle' ? ' is-on' : ''}`} onClick={onRecord} title="Record loop">
         ●{recordState !== 'idle' && ` ${recordState}`}
@@ -72,12 +106,15 @@ export function TransportBar() {
       <button className={`btn transport__metro${metroEnabled ? ' is-on' : ''}`} onClick={toggleMetro}>
         M
       </button>
-      <label className="transport__q">
-        Q
-        <select value={quantize} onChange={(e) => setQuantize(e.target.value as Quantize)}>
-          {Q.map((q) => <option key={q} value={q}>{q}</option>)}
-        </select>
-      </label>
+      <div className="transport__q">
+        <span className="transport__q-label">Q</span>
+        <div className="seg seg--wrap">
+          {Q.map((q) => (
+            <button key={q} className={`seg-btn${quantize === q ? ' is-on' : ''}`}
+              onClick={() => setQuantize(q)} title={`Quantize: ${q}`}>{q}</button>
+          ))}
+        </div>
+      </div>
       <div className="transport__right">
         {MODES.map((m) => (
           <button key={m} className={`btn transport__mode${mode === m ? ' is-on' : ''}`} onClick={() => setMode(m)}>

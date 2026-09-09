@@ -52,9 +52,34 @@ body {
   touch-action: none;
 }
 
-.transport__bpm { display: flex; align-items: center; gap: 0.5rem; }
+.transport__bpm { display: flex; align-items: center; gap: 6px; }
+.transport__bpm-label,
+.transport__q-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+.transport__step {
+  min-width: 48px; min-height: 48px; font-size: 1.35rem; font-weight: 700; line-height: 1;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--line); border-radius: 10px;
+  touch-action: none;
+}
+.transport__step:active { background: var(--panel); }
 .transport__val { min-width: 3ch; font-variant-numeric: tabular-nums; }
-.transport__q { margin-left: auto; }
+.transport__val--big { font-size: 1.25rem; font-weight: 700; min-width: 3ch; text-align: center; font-variant-numeric: tabular-nums; }
+.transport__q { display: flex; align-items: center; gap: 6px; }
+
+/* Generic segmented finger controls */
+.seg { display: flex; gap: 4px; }
+.seg--wrap { flex-wrap: wrap; }
+.seg-btn {
+  min-height: 40px; min-width: 44px; padding: 0 0.6rem; font-size: 0.85rem;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--line); border-radius: 8px;
+  touch-action: none;
+}
+.seg-btn.is-on {
+  background: var(--accent); border-color: var(--accent);
+  color: #0e1013; font-weight: 700;
+}
+.seg--follow .seg-btn { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
 
 .laptop__main { flex: 1; display: flex; min-height: 0; }
 .laptop__left { flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; }
@@ -301,26 +326,36 @@ body {
   background: var(--panel);
   border-bottom: 1px solid var(--line);
 }
-.seq__head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
-.seq__select,
-.seq__ctl select {
-  min-height: 40px; padding: 0.25rem 0.5rem;
+.seq__head { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
+.seq__head-group { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.seq__divider { align-self: stretch; width: 1px; background: var(--accent); opacity: 0.45; margin: 0 0.1rem; }
+.seq__pat-chip {
+  min-height: 44px; padding: 0 0.75rem; font-size: 0.95rem;
+  display: inline-flex; align-items: center; gap: 6px;
   background: var(--bg); color: var(--text);
-  border: 1px solid var(--line); border-radius: 8px;
+  border: 1px solid var(--line); border-radius: 999px;
+  touch-action: none;
 }
-.seq__ctl { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--muted); }
-.seq__ctl input[type='range'] { width: 90px; }
-.seq__val { min-width: 3ch; color: var(--text); font-variant-numeric: tabular-nums; }
+.seq__pat-chip.is-on { color: #0e1013; font-weight: 700; }
+.seq__pat-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.seq__ctl { display: flex; align-items: center; gap: 6px; }
+.seq__ctl-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
 .seq__pads {
   position: relative;
   display: flex; gap: 6px;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
   min-height: 64px;
+  padding-bottom: 8px;
 }
+.seq__pads::-webkit-scrollbar { height: 8px; }
+.seq__pads::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+.seq__pads::-webkit-scrollbar-track { background: transparent; }
 .seq__playhead {
   position: absolute; top: 0; bottom: 0;
   width: 2px; left: 0;
-  background: var(--accent); opacity: 0.55;
+  background: var(--accent); opacity: 0.8;
   pointer-events: none; z-index: 2;
 }
 .seq__pad {
@@ -329,26 +364,37 @@ body {
   border: 1px solid var(--line); border-radius: 10px;
   background: var(--bg); color: var(--muted);
   overflow: hidden;
-  touch-action: none;
+  touch-action: pan-x; /* taps still work; horizontal swipe scrolls */
   padding: 0;
+  transition: transform 80ms ease;
 }
-.seq__pad.is-on { border-color: currentColor; }
+.seq__pad:active { transform: scale(0.94); }
+.seq__pad:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* On-state: solid kit-colour LED. color comes from the --kick/--snare/--hat rule. */
+.seq__pad.is-on {
+  background: currentColor;
+  border-color: currentColor;
+}
 .seq__pad--kick { color: #14b8a6; }
 .seq__pad--snare { color: #f59e0b; }
 .seq__pad--hat { color: #8b5cf6; }
+.seq__pad.is-on .seq__dots,
+.seq__pad.is-on .seq__mods { color: #0e1013; }
 .seq__vel {
   position: absolute; left: 0; right: 0; bottom: 0;
-  background: currentColor; opacity: 0.16;
+  background: var(--bg); opacity: 0.25;
 }
 .seq__dots {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
-  color: currentColor; font-size: 0.7rem; letter-spacing: 1px;
+  color: inherit; font-size: 0.7rem; letter-spacing: 1px;
+  font-weight: 700;
 }
 .seq__mods {
-  position: absolute; left: 4px; right: 4px; bottom: 2px;
-  font-size: 0.55rem; line-height: 1; color: var(--muted);
+  position: absolute; left: 3px; right: 3px; bottom: 2px;
+  font-size: 0.55rem; line-height: 1; color: inherit;
   text-align: center; white-space: nowrap;
+  opacity: 0.9;
 }
 .seq__chain { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
 .seq__chain-label { font-size: 0.7rem; text-transform: uppercase; color: var(--muted); }
