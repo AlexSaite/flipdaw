@@ -294,6 +294,73 @@ body {
 .modal__row input[type='range'] { flex: 1; }
 .modal__close { margin-left: auto; min-height: 44px; font-weight: 600; }
 
+/* Step sequencer (M5.5) */
+.seq {
+  display: flex; flex-direction: column; gap: 0.5rem;
+  padding: 0.5rem 1rem 0.75rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.seq__head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.seq__select,
+.seq__ctl select {
+  min-height: 40px; padding: 0.25rem 0.5rem;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--line); border-radius: 8px;
+}
+.seq__ctl { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--muted); }
+.seq__ctl input[type='range'] { width: 90px; }
+.seq__val { min-width: 3ch; color: var(--text); font-variant-numeric: tabular-nums; }
+.seq__pads {
+  position: relative;
+  display: flex; gap: 6px;
+  overflow-x: auto;
+  min-height: 64px;
+}
+.seq__playhead {
+  position: absolute; top: 0; bottom: 0;
+  width: 2px; left: 0;
+  background: var(--accent); opacity: 0.55;
+  pointer-events: none; z-index: 2;
+}
+.seq__pad {
+  position: relative; flex: 1 0 8%;
+  min-width: 48px; min-height: 48px;
+  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--bg); color: var(--muted);
+  overflow: hidden;
+  touch-action: none;
+  padding: 0;
+}
+.seq__pad.is-on { border-color: currentColor; }
+.seq__pad--kick { color: #14b8a6; }
+.seq__pad--snare { color: #f59e0b; }
+.seq__pad--hat { color: #8b5cf6; }
+.seq__vel {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: currentColor; opacity: 0.16;
+}
+.seq__dots {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: currentColor; font-size: 0.7rem; letter-spacing: 1px;
+}
+.seq__mods {
+  position: absolute; left: 4px; right: 4px; bottom: 2px;
+  font-size: 0.55rem; line-height: 1; color: var(--muted);
+  text-align: center; white-space: nowrap;
+}
+.seq__chain { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.seq__chain-label { font-size: 0.7rem; text-transform: uppercase; color: var(--muted); }
+.seq__chip {
+  min-height: 32px; padding: 0.15rem 0.6rem; font-size: 0.8rem;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--line); border-radius: 999px;
+  touch-action: none;
+}
+.seq__chip.is-on { border-color: var(--accent); color: var(--accent); }
+.seq__chip.is-active { outline: 2px solid var(--accent); outline-offset: 1px; }
+
 /* Mapping */
 .modal__section { border-top: 1px solid var(--line); padding-top: 0.5rem; margin-top: 0.5rem; }
 .modal__section h4 { margin: 0 0 0.4rem; font-size: 0.75rem; text-transform: uppercase; color: var(--muted); }

@@ -287,6 +287,40 @@ flipdaw/
 
 ---
 
+### M5.5: Step Sequencer
+
+**Goal:** 16-step drum sequencer on the beat grid, with per-step velocity/
+flam/ratchet/probability and pattern-level swing/humanize + pattern chains.
+Features distilled from drumhaus / Drum Loop Studio (concepts only).
+
+#### Files to Create
+
+| File | Purpose | Key Contracts |
+|------|---------|---------------|
+| `src/sequencer/model.ts` | Pattern model | `StepCell`, `SeqPattern`, `MAX_STEPS`, mutating ops |
+| `src/sequencer/stepSequencer.ts` | 16th-grid engine | `StepSequencer`, `mulberry32`, `swingDelay`, `Hit`, `StepVoiceBus` |
+| `src/sequencer/chain.ts` | Pattern chaining | `ChainRunner`, `ChainStep` |
+| `src/audio/stepVoice.ts` | Voice bus | `createStepVoiceBus(ctx, dest)`: synth kick/snare/hat |
+| `src/store/sequencer.ts` | Sequencer store | `useSequencer`: patterns, arm, chain |
+| `src/ui/components/StepSequencer.tsx` | Pad UI | 48px pads, velocity cycle, playhead (rAF), chain chips |
+
+#### Test Files
+
+| File | Tests |
+|------|-------|
+| `src/sequencer/__tests__/model.test.ts` | Toggle/velocity cycle, clamping, resize |
+| `src/sequencer/__tests__/stepSequencer.test.ts` | Grid schedules, swing, probability, ratchet, flam |
+| `src/sequencer/__tests__/chain.test.ts` | Bar switches on the grid, wrap, jumpTo |
+
+#### Acceptance Criteria
+
+- [ ] Step hits fire sample-accurately on the 16th grid
+- [ ] Swing shifts odd steps up to 1/3 step; humanize adds seeded jitter
+- [ ] Chain switches patterns exactly on bar boundaries
+- [ ] Pads ≥48px (touch), playhead updates off the React rendering path
+
+---
+
 ## Key Architecture Decisions (ADRs)
 
 | ADR | Decision | Rationale |
@@ -350,6 +384,15 @@ flipdaw/
 3. Build JUCE spike
 4. Validation sessions
 5. **M5 Complete** → commit + tag
+
+### Phase 7: Step Sequencer (M5.5)
+1. Write sequencer model: StepCell (velocity/flam/ratchet/probability) + ops
+2. Write StepSequencer engine: 16th grid, swing, humanize, seeded PRNG
+3. Write ChainRunner: pattern chaining on the bar grid
+4. Build seq store + Web Audio voice bus (synthesized kick/snare/hat)
+5. Build StepSequencer pads UI + playhead + chain chips
+6. Verify: vitest, typecheck, lint, build
+7. **M5.5 Complete** → commit + tag
 
 ---
 
