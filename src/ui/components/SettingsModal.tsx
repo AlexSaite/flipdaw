@@ -1,12 +1,15 @@
 import { useUi } from '../../store/ui';
 import { useSettings, type Theme, type LatencyPreset, type Density } from '../../store/settings';
 import { getEngine } from '../../audio/engine';
+import { getHinge } from '../../bridge/bind';
 
 export function SettingsModal() {
   const open = useUi((s) => s.settingsOpen);
   const setOpen = useUi((s) => s.setSettingsOpen);
   const settings = useSettings();
   const { set } = useSettings();
+  const hinge = useUi((s) => s.hinge);
+  const mode = useUi((s) => s.mode);
 
   if (!open) return null;
 
@@ -64,6 +67,14 @@ export function SettingsModal() {
           <input type="number" min={0} max={600} step={10} value={settings.autosaveSec}
             onChange={(e) => set({ autosaveSec: Math.max(0, Number(e.target.value)) })} />
         </label>
+
+        <div className="modal__row">
+          Hinge angle (sim)
+          <input type="range" min={0} max={360} step={1}
+            value={hinge ?? 90}
+            onChange={(e) => getHinge().simulate(Number(e.target.value))} />
+          <span>{hinge ?? 90}° · {mode}</span>
+        </div>
 
         <button className="btn modal__close" onClick={() => setOpen(false)}>Done</button>
       </div>

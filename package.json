@@ -1,7 +1,7 @@
 {
   "name": "flipdaw",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
+    "bridge": "node tools/osc-ws-bridge.mjs",
     "security:scan": "npx tsx tools/security/scan.ts"
   },
   "dependencies": {
@@ -28,6 +29,7 @@
     "tsx": "^4.23.13",
     "typescript": "~6.0.2",
     "vite": "^8.2.2",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.0",
+    "ws": "8.21.3"
   }
 }

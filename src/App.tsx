@@ -9,6 +9,7 @@ import { useHistory } from './store/history';
 import { useSettings } from './store/settings';
 import { useGrid } from './store/project';
 import { getEngine } from './audio/engine';
+import { bindBridge } from './bridge/bind';
 
 const MODE_KEYS: Record<string, LayoutMode> = { '1': 'laptop', '2': 'tent', '3': 'mixer' };
 
@@ -41,6 +42,8 @@ function App() {
     const s = useSettings.getState();
     getEngine().metronome.setEnabled(s.metroEnabled);
     getEngine().metronome.setGain(s.metroGain);
+    const unbind = bindBridge();
+    return () => unbind();
   }, []);
 
   // Autosave: rotate-through-backups every N seconds while dirty.

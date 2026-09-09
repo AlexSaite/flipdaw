@@ -286,6 +286,11 @@ body {
 .modal__close { margin-left: auto; min-height: 44px; font-weight: 600; }
 
 /* Mapping */
+.modal__section { border-top: 1px solid var(--line); padding-top: 0.5rem; margin-top: 0.5rem; }
+.modal__section h4 { margin: 0 0 0.4rem; font-size: 0.75rem; text-transform: uppercase; color: var(--muted); }
+.badge { font-size: 0.75rem; font-weight: 700; color: var(--muted); min-width: 90px; }
+.badge--ok { color: #14b8a6; }
+.modal__check { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; }
 .mapping__tables { display: flex; flex-direction: column; gap: 0.4rem; }
 .mapping__row { display: flex; gap: 0.4rem; }
 .mapping__row input {

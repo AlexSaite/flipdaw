@@ -105,6 +105,7 @@ interface GridStore {
   cancelRecording(): void;
   setFollowAction(scene: number, action: FollowAction | null): void;
   setReverbLevel(v: number): void;
+  launchScene(scene: number): void;
 
   init(): Promise<void>;
   resetToDemo(): Promise<void>;
@@ -491,6 +492,8 @@ export const useGrid = create<GridStore>((set, get) => {
       set({ reverbLevel: level });
       getEngine().getReverb().setLevel(level);
     },
+
+    launchScene: (scene) => launchScene(scene),
 
     async init() {
       if (get().ready) return;
