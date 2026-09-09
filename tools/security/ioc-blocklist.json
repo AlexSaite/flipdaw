@@ -1,0 +1,53 @@
+{
+  "version": "2026-09-09",
+  "description": "Known malicious packages from ChainDrop, Miasma, IronWorm, TrapDoor campaigns (June-September 2026)",
+  "sources": [
+    "Phoenix Security MPI",
+    "StepSecurity OSS Security Feed",
+    "Aikido, Socket, DataDog Security Labs"
+  ],
+  "packages": {
+    "keyv": ["6.0.0"],
+    "flat-cache": ["6.1.24"],
+    "file-entry-cache": ["11.1.6"],
+    "cacheable-request": ["13.0.20"],
+    "cacheable": ["2.5.1"],
+    "@cacheable/memory": ["2.2.1"],
+    "@cacheable/net": ["2.1.1"],
+    "@cacheable/node-cache": ["3.1.2"],
+    "@cacheable/utils": ["3.1.2"],
+    "cache-manager": ["7.2.10"],
+    "ecto": ["5.0.1"]
+  },
+  "patterns": {
+    "binding.gyp_in_non_native": {
+      "description": "Phantom Gyp: binding.gyp in packages without native addons",
+      "severity": "CRITICAL"
+    },
+    "bun_in_tmp": {
+      "description": "Mini Shai-Hulud/Miasma/ChainDrop: bun binary in /tmp or ~/bun",
+      "severity": "CRITICAL"
+    },
+    "zero_width_unicode": {
+      "description": "TrapDoor: zero-width Unicode in .cursorrules/CLAUDE.md",
+      "severity": "HIGH",
+      "chars": ["U+200B", "U+200C", "U+200D", "U+FEFF"]
+    },
+    "vscode_tasks_folderOpen": {
+      "description": "Mini Shai-Hulud: .vscode/tasks.json with runOn: folderOpen",
+      "severity": "HIGH"
+    },
+    "sessionstart_hooks": {
+      "description": "Mini Shai-Hulud: Claude Code SessionStart hooks",
+      "severity": "HIGH"
+    }
+  },
+  "safe_sources": [
+    "npmjs.com (official registry)",
+    "GitHub releases from verified accounts",
+    "Tauri official releases",
+    "Vite official releases",
+    "Vitest official releases",
+    "Playwright official releases"
+  ]
+}
