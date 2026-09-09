@@ -18,6 +18,8 @@ export interface TrackStrip {
 }
 
 export interface MasterBus {
+  /** Master input node — submixes route here (e.g. deck crossfader bus). */
+  readonly input: AudioNode;
   setGain(v: number): void;
   /** Peaks [L, R] 0..1; call from rAF. */
   meter(): [number, number];
@@ -59,6 +61,7 @@ export function createAudioGraph(ctx: AudioContext): AudioGraph {
   const bufR = new Float32Array(anR.fftSize);
 
   const master: MasterBus = {
+    input: masterGain,
     setGain(v: number) { masterGain.gain.setTargetAtTime(v, ctx.currentTime, 0.01); },
     meter(): [number, number] {
       anL.getFloatTimeDomainData(bufL);
