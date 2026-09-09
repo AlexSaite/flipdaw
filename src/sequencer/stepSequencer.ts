@@ -11,14 +11,16 @@
 
 import type { Scheduler } from '../audio/scheduler';
 import type { Seconds, Transport, Unsub } from '../audio/transport';
-import type { SeqPattern } from './model';
+import type { SeqPattern, StepCell } from './model';
 
 /** One sub-hit scheduled on the audio clock. */
-export interface Hit { at: Seconds; velocity: number }
+export interface Hit { at: Seconds; velocity: number; src?: string }
 
 /** Receives completed hits; implement over Web Audio or a fake in tests. */
 export interface StepVoiceBus {
   play(sourceId: string, at: Seconds, velocity: number): void;
+  /** Register (or replace) a sample-backed voice, keyed e.g. `smp:<sha>`. */
+  setSample(sampleId: string, buffer: AudioBuffer): void;
 }
 
 export type Rng = () => number;
@@ -50,8 +52,6 @@ export interface StepSequencerOptions {
   /** Audio clock — injectable for tests. */
   now(): Seconds;
   pattern: SeqPattern;
-  /** Map a step index to the sound that should fire (null = silent). */
-  getSourceIdAt(stepIndex: number): string | null;
   voice: StepVoiceBus;
   rng?: Rng;
   lookaheadSec?: number;
@@ -65,7 +65,6 @@ export class StepSequencer {
   private readonly scheduler: Scheduler;
   private readonly now: () => Seconds;
   private readonly voice: StepVoiceBus;
-  private readonly getSourceIdAt: (i: number) => string | null;
   private readonly rng: Rng;
   private readonly ahead: number;
 
@@ -79,7 +78,6 @@ export class StepSequencer {
     this.scheduler = o.scheduler;
     this.now = o.now;
     this.voice = o.voice;
-    this.getSourceIdAt = o.getSourceIdAt;
     this.rng = o.rng ?? Math.random;
     this.ahead = o.lookaheadSec ?? DEFAULT_AHEAD;
     this.pattern = o.pattern;
@@ -134,17 +132,22 @@ export class StepSequencer {
       if (!this.scheduledOrds.has(ord)) {
         this.scheduledOrds.add(ord);
         const stepIndex = ord % p.length;
-        const cell = p.steps[stepIndex];
-        if (cell.on) this.scheduleForStep(p, cell, stepIndex, at);
+        this.scheduleRowHits(p, stepIndex, at);
       }
       ord++;
     }
   }
 
-  private scheduleForStep(p: SeqPattern, cell: SeqPattern['steps'][number], stepIndex: number, base: Seconds): void {
+  /** Fire every on-cell across all instrument rows for the step. */
+  private scheduleRowHits(p: SeqPattern, stepIndex: number, base: Seconds): void {
     const stepDur = stepDurSec(this.transport.bpm);
-    const srcId = this.getSourceIdAt(stepIndex);
-    if (srcId === null) return;
+    for (let r = 0; r < p.rows.length; r++) {
+      const cell = p.rows[r].steps[stepIndex];
+      if (cell.on) this.scheduleForStep(p, p.rows[r].voice, cell, stepIndex, base, stepDur);
+    }
+  }
+
+  private scheduleForStep(p: SeqPattern, srcId: string, cell: StepCell, stepIndex: number, base: Seconds, stepDur: Seconds): void {
     if (this.rng() > cell.probability) return;
 
     const hu = p.humanize;

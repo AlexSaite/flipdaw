@@ -1,14 +1,12 @@
 /**
- * FlipDAW — step-sequencer voice bus (M5.5).
- * Synthesizes a tiny drum kit (kick/snare/hat/tom) from short per-hit buffers,
- * one fire-and-forget BufferSourceNode per hit, gain scaled by velocity. All
- * voices route into the passed destination (a track strip) so the sequencer
- * sits in the same mix as looped clips.
- *
- * Level design: the kit is synthesized, so its raw peak is far below a WAV
- * sample. Every hit goes through a fixed stage gain + a soft compressor, so
- * even dense poly-rhythms (ratchets, flams) land at a comparable loudness
- * without hard clipping.
+ * FlipDAW — step-sequencer voice bus (M5.5 → M6.4).
+ * Synthesizes a drum kit (kick/snare/clap/hat/openhat/tom/ride/rim/perc/shaker)
+ * from short per-hit buffers, one fire-and-forget BufferSourceNode per hit, gain
+ * scaled by velocity. Imported samples register through `setSample(id, buf)` and
+ * play with an id of the form `smp:<sha>`. All voices route into the passed
+ * destination (a track strip) so the sequencer sits in the same mix as clips.
+ * Compressor + stage gain keep dense poly-rhythms (ratchets, flams) comparable
+ * in loudness to WAV imports without clipping.
  */
 
 import type { StepVoiceBus } from '../sequencer/stepSequencer';
@@ -90,15 +88,48 @@ export function createStepVoiceBus(
         normalizePeak(buf.getChannelData(0));
         break;
       }
+      case 'clap': {
+        buf = noise(ctx, 0.22);
+        decay(buf.getChannelData(0), 3);
+        normalizePeak(buf.getChannelData(0));
+        break;
+      }
       case 'hat': {
         buf = noise(ctx, 0.05);
         decay(buf.getChannelData(0), 3);
         normalizePeak(buf.getChannelData(0));
         break;
       }
+      case 'openhat': {
+        buf = noise(ctx, 0.25);
+        decay(buf.getChannelData(0), 1.5);
+        normalizePeak(buf.getChannelData(0));
+        break;
+      }
       case 'tom':
         buf = sineSweep(ctx, 220, 120, 0.22);
         break;
+      case 'ride': {
+        buf = noise(ctx, 0.4);
+        decay(buf.getChannelData(0), 2);
+        normalizePeak(buf.getChannelData(0), 0.6);
+        break;
+      }
+      case 'rim': {
+        buf = noise(ctx, 0.035);
+        decay(buf.getChannelData(0), 4);
+        normalizePeak(buf.getChannelData(0));
+        break;
+      }
+      case 'perc':
+        buf = sineSweep(ctx, 500, 260, 0.09);
+        break;
+      case 'shaker': {
+        buf = noise(ctx, 0.12);
+        decay(buf.getChannelData(0), 6);
+        normalizePeak(buf.getChannelData(0), 0.7);
+        break;
+      }
       default:
         buf = sineSweep(ctx, 660, 330, 0.06);
     }
@@ -107,6 +138,9 @@ export function createStepVoiceBus(
   }
 
   return {
+    setSample(sampleId, buffer) {
+      cache.set(sampleId, buffer);
+    },
     play(sourceId, at, velocity) {
       const src = ctx.createBufferSource();
       src.buffer = bufferFor(sourceId);

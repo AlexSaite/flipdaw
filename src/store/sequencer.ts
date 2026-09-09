@@ -4,6 +4,7 @@ import { createStepVoiceBus } from '../audio/stepVoice';
 import type { StepVoiceBus } from '../sequencer/stepSequencer';
 import { StepSequencer, mulberry32 } from '../sequencer/stepSequencer';
 import { ChainRunner, type ChainStep } from '../sequencer/chain';
+import { KIT_PRESETS, kitVoiceAt } from '../sequencer/kits';
 import {
   createPattern as modelCreatePattern,
   toggleStep,
@@ -11,16 +12,32 @@ import {
   patchCell,
   setLength,
   randomizePattern,
+  MAX_ROWS,
   type SeqPattern,
 } from '../sequencer/model';
+import { DecodeCache } from '../project/decodeCache';
+import { useGrid } from './project';
+import { toast } from './toasts';
 
-/** Default kit: steps land on kick/snare/hat roll. */
-export const SEQUENCER_KIT = ['kick', 'kick', 'snare', 'hat'];
+/** Default kit: one preset per row, 16 voices (M6.4). */
+export const SEQUENCER_KIT = KIT_PRESETS.map((v) => v.voice);
 
 const SEQ_TRACK = '__seq__';
+/** Voice id used for a sample-backed row. */
+export function sampleVoiceId(hash: string): string {
+  return `smp:${hash}`;
+}
 
 let sequencer: StepSequencer | null = null;
 let chainRunner: ChainRunner | null = null;
+let voice: StepVoiceBus | null = null;
+let cache: DecodeCache | null = null;
+
+function ensureCache(): DecodeCache {
+  if (cache) return cache;
+  cache = new DecodeCache(getEngine().ctx);
+  return cache;
+}
 
 function freshId(): string {
   return `p${Math.random().toString(36).slice(2, 8)}`;
@@ -28,7 +45,10 @@ function freshId(): string {
 
 /** Clone a pattern so store actions stay immutable (model ops mutate in place). */
 function clonePattern(p: SeqPattern): SeqPattern {
-  return { ...p, steps: p.steps.map((c) => ({ ...c })) };
+  return {
+    ...p,
+    rows: p.rows.map((row) => ({ ...row, steps: row.steps.map((c) => ({ ...c })) })),
+  };
 }
 
 export interface Patch {
@@ -49,29 +69,38 @@ export interface SequencerStore {
   createPattern(name?: string): SeqPattern;
   removePattern(id: string): void;
   toggleArmed(): void;
-  toggleStep(i: number): void;
-  cycleVelocity(i: number): void;
-  patchCell(i: number, patch: Patch): void;
+  toggleStep(r: number, i: number): void;
+  cycleVelocity(r: number, i: number): void;
+  patchCell(r: number, i: number, patch: Patch): void;
   setLength(n: number): void;
   setSwing(v: number): void;
   setHumanize(v: number): void;
   randomize(): void;
+  /** Load a WAV into row r as a sample-backed voice. */
+  importSample(r: number, file: File): Promise<void>;
+  /** Revert a sample row back to its default synth voice. */
+  resetRow(r: number): void;
   setChain(steps: ChainStep[]): void;
   toggleChain(): void;
 }
 
 function houseBeat(p: SeqPattern): SeqPattern {
-  for (const i of [0, 4, 8, 12]) { p.steps[i].on = true; p.steps[i].velocity = 1; }
-  p.steps[4].velocity = 0.75;
-  p.steps[12].velocity = 0.75;
-  for (const i of [2, 6, 10, 14]) { p.steps[i].on = true; p.steps[i].velocity = 0.5; }
-  p.steps[11].on = true;
-  p.steps[11].velocity = 0.75;
+  const kick = p.rows[0].steps;
+  for (const i of [0, 4, 8, 12]) kick[i].on = true;
+  kick[0].velocity = 1; kick[4].velocity = 0.75; kick[8].velocity = 1; kick[12].velocity = 0.75;
+  const snare = p.rows[1].steps;
+  snare[4].on = true; snare[4].velocity = 1;
+  snare[12].on = true; snare[12].velocity = 1;
+  const hat = p.rows[2].steps;
+  for (const i of [2, 6, 10, 14]) hat[i].on = true;
+  for (const i of [2, 6, 10, 14]) hat[i].velocity = 0.5;
+  const oh = p.rows[3].steps;
+  oh[11].on = true; oh[11].velocity = 0.75;
   return p;
 }
 
 function initialHouse(): SeqPattern {
-  const p = modelCreatePattern('pdefault', 'HouseBeat', 16);
+  const p = modelCreatePattern('pdefault', 'HouseBeat', 16, MAX_ROWS);
   p.humanize = 0.3;
   return houseBeat(p);
 }
@@ -82,13 +111,12 @@ export const useSequencer = create<SequencerStore>((set, get) => {
   function ensureSequencer(): void {
     if (sequencer) return;
     const e = getEngine();
-    const voice: StepVoiceBus = createStepVoiceBus(e.ctx, e.stripFor(SEQ_TRACK).input);
+    voice = createStepVoiceBus(e.ctx, e.stripFor(SEQ_TRACK).input);
     sequencer = new StepSequencer({
       transport: e.transport,
       scheduler: e.scheduler,
       now: () => e.ctx.currentTime,
       pattern: get().activePattern() ?? initial,
-      getSourceIdAt: (i) => SEQUENCER_KIT[i % SEQUENCER_KIT.length] ?? 'kit',
       voice,
       rng: mulberry32((Math.random() * 2 ** 32) >>> 0),
     });
@@ -139,7 +167,7 @@ export const useSequencer = create<SequencerStore>((set, get) => {
     },
     createPattern: (name = 'Pattern') => {
       ensureSequencer();
-      const p = modelCreatePattern(freshId(), name, 16);
+      const p = modelCreatePattern(freshId(), name, 16, MAX_ROWS);
       set((s) => ({ patterns: [...s.patterns, p], activeId: p.id }));
       sequencer?.setPattern(p);
       return p;
@@ -163,25 +191,25 @@ export const useSequencer = create<SequencerStore>((set, get) => {
       if (next) chainStart();
       set({ armed: next });
     },
-    toggleStep: (i) => {
+    toggleStep: (r, i) => {
       const p = get().activePattern();
       if (!p) return;
       const n = clonePattern(p);
-      toggleStep(n, i);
+      toggleStep(n, r, i);
       commitActive(n);
     },
-    cycleVelocity: (i) => {
+    cycleVelocity: (r, i) => {
       const p = get().activePattern();
       if (!p) return;
       const n = clonePattern(p);
-      cycleVelocity(n, i);
+      cycleVelocity(n, r, i);
       commitActive(n);
     },
-    patchCell: (i, patch) => {
+    patchCell: (r, i, patch) => {
       const p = get().activePattern();
       if (!p) return;
       const n = clonePattern(p);
-      patchCell(n, i, patch);
+      patchCell(n, r, i, patch);
       commitActive(n);
     },
     setLength: (n) => {
@@ -206,6 +234,41 @@ export const useSequencer = create<SequencerStore>((set, get) => {
       if (!p) return;
       const n = clonePattern(p);
       randomizePattern(n, mulberry32((Math.random() * 2 ** 32) >>> 0));
+      commitActive(n);
+    },
+    importSample: async (r, file) => {
+      try {
+        ensureSequencer();
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const buf = await ensureCache().decode(bytes);
+        if (!buf) {
+          toast.error(`Cannot decode ${file.name}`);
+          return;
+        }
+        const hash = await ensureCache().hashOf(bytes);
+        const rel = `samples/${hash}.wav`;
+        const handle = useGrid.getState().currentHandle();
+        if (handle) {
+          try { await handle.writeBinary(rel, bytes); } catch { toast.error('Sample write failed (read-only dir?)'); }
+        }
+        const id = sampleVoiceId(hash);
+        voice?.setSample(id, buf);
+        const p = get().activePattern();
+        if (p) {
+          const n = clonePattern(p);
+          n.rows[r] = { ...n.rows[r], voice: id, kind: 'sample', sampleSha: hash };
+          commitActive(n);
+        }
+        toast.success(`${file.name} → row ${r + 1}`);
+      } catch (e) {
+        toast.error(`Load failed: ${(e as Error).message}`);
+      }
+    },
+    resetRow: (r) => {
+      const p = get().activePattern();
+      if (!p) return;
+      const n = clonePattern(p);
+      n.rows[r] = { ...n.rows[r], voice: kitVoiceAt(r), kind: 'synth', sampleSha: null };
       commitActive(n);
     },
     setChain: (steps) => {

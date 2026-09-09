@@ -14,6 +14,11 @@ function onSteps(indices: number[], patch: Partial<StepCell> = {}): StepCell[] {
   return cells;
 }
 
+/** Set row r (default: row 0 = kick) to the given on-pattern. */
+function patchRow(p: SeqPattern, r: number, indices: number[], patch: Partial<StepCell> = {}): void {
+  p.rows[r].steps = onSteps(indices, patch);
+}
+
 function setup(pattern: SeqPattern) {
   const clock = createMockClock(0);
   const tr = new Transport(clock, 120); // 16th = 0.125 s
@@ -24,8 +29,10 @@ function setup(pattern: SeqPattern) {
     scheduler: sch,
     now: () => clock.currentTime,
     pattern,
-    getSourceIdAt: () => 'drum',
-    voice: { play: (_src, at, velocity) => hits.push({ at, velocity }) },
+    voice: {
+      play: (src, at, velocity) => hits.push({ at, velocity, src }),
+      setSample: () => {},
+    },
     rng: () => 0.99, // near-1 rng: probability gates work, jitter ≈ none
   });
   return { clock, tr, sch, seq, hits };
@@ -34,7 +41,7 @@ function setup(pattern: SeqPattern) {
 describe('StepSequencer', () => {
   it('schedules 16ths on the grid, sample-accurate, no doubles', () => {
     const p = createPattern('d', 'D', 4);
-    p.steps = onSteps([0, 1, 2, 3]);
+    patchRow(p, 0, [0, 1, 2, 3]);
     const { clock, tr, sch, hits } = setup(p);
     tr.start();
     clock.set(0.10); sch.tick(); // ord 1 (0.125 s) and ord 2 (0.25 s) enter horizon
@@ -53,9 +60,28 @@ describe('StepSequencer', () => {
     expect(hits.map((h) => h.at)).toContain(0.625);
   });
 
+  it('fires every instrument row on its own step, each with its own sound', () => {
+    const p = createPattern('grid', 'Grid', 4);
+    patchRow(p, 0, [0]);      // kick on step 0
+    patchRow(p, 1, [1]);      // snare on step 1
+    patchRow(p, 2, [2]);      // hat on step 2
+    patchRow(p, 3, [3]);      // tom on step 3 (default row voice)
+    const { clock, tr, sch, hits } = setup(p);
+    tr.start();
+    clock.set(0.05); sch.tick(); // schedules ord 1 (0.125)
+    clock.set(0.15); sch.tick(); // schedules ord 2 (0.25)
+    clock.set(0.30); sch.tick(); // schedules ord 3 (0.375) + drains 1 & 2
+    clock.set(0.50); sch.tick(); // schedules ord 4 (0.5) + drains 3 & 4
+    const byStep = Object.fromEntries(hits.map((h) => [h.at, h.src]));
+    expect(byStep[0.125]).toBe('snare'); // ord 1 → step 1 (row 1)
+    expect(byStep[0.25]).toBe('hat');    // ord 2 → step 2 (row 2)
+    expect(byStep[0.375]).toBe('tom');   // ord 3 → step 3 (row 3)
+    expect(byStep[0.5]).toBe('kick');    // ord 4 → step 0 wrap (row 0)
+  });
+
   it('swing delays only odd steps by a third of a step', () => {
     const p = createPattern('sw', 'Swing', 4);
-    p.steps = onSteps([0, 1]);
+    patchRow(p, 0, [0, 1]);
     p.swing = 1;
     const { clock, tr, sch, hits } = setup(p);
     tr.start();
@@ -71,7 +97,7 @@ describe('StepSequencer', () => {
 
   it('probability gates hits deterministically', () => {
     const p = createPattern('pr', 'Prob', 4);
-    p.steps = onSteps([0], { probability: 0.5 });
+    patchRow(p, 0, [0], { probability: 0.5 });
     const clock = createMockClock(0);
     const tr = new Transport(clock, 120);
     const sch = new Scheduler({ clock: () => clock.currentTime, lookaheadSec: 0.12 });
@@ -79,7 +105,7 @@ describe('StepSequencer', () => {
     const rngSeq = mulberry32(7);
     new StepSequencer({
       transport: tr, scheduler: sch, now: () => clock.currentTime, pattern: p,
-      getSourceIdAt: () => 'd', voice: { play: (_s, at, v) => hits.push({ at, velocity: v }) },
+      voice: { play: (_s, at, v) => hits.push({ at, velocity: v }), setSample: () => {} },
       rng: rngSeq,
     });
     tr.start();
@@ -91,7 +117,7 @@ describe('StepSequencer', () => {
 
   it('ratchet splits a step into N sub-hits', () => {
     const p = createPattern('rc', 'Ratchet', 4);
-    p.steps = onSteps([0], { ratchet: 3 });
+    patchRow(p, 0, [0], { ratchet: 3 });
     const { clock, tr, sch, hits } = setup(p);
     tr.start();
     clock.set(0.05); sch.tick();
@@ -106,7 +132,7 @@ describe('StepSequencer', () => {
 
   it('flam adds ghost hits 25 ms after the step with reduced velocity', () => {
     const p = createPattern('fl', 'Flam', 4);
-    p.steps = onSteps([2], { flam: 1 }); // step index 2 → ordinal 2 → 0.25 s
+    patchRow(p, 0, [2], { flam: 1 }); // step index 2 → ordinal 2 → 0.25 s
     const { clock, tr, sch, hits } = setup(p);
     tr.start();
     clock.set(0.15); sch.tick();
