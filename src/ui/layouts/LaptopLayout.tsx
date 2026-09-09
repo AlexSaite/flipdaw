@@ -3,6 +3,7 @@ import { Grid } from '../components/Grid';
 import { TransportBar } from '../components/TransportBar';
 import { StepSequencer } from '../components/StepSequencer';
 import { Piano } from '../components/Piano';
+import { Sampler } from '../components/Sampler';
 import { Inspector } from '../components/Inspector';
 import { ProjectBar } from '../components/ProjectBar';
 import { Toasts } from '../components/Toasts';
@@ -22,6 +23,7 @@ export function LaptopLayout() {
       <TransportBar />
       <StepSequencer />
       <Piano />
+      <Sampler />
       <main className="laptop__main">
         <div className="laptop__left">
           {ready ? <Grid /> : <div className="laptop__loading">Loading demo…</div>}

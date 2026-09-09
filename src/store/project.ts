@@ -109,6 +109,8 @@ interface GridStore {
 
   init(): Promise<void>;
   resetToDemo(): Promise<void>;
+  /** Active project directory (null when only in-memory demo edits). */
+  currentHandle(): DirHandle | null;
 }
 
 const DEMO_COLORS: Record<string, string> = {
@@ -533,5 +535,7 @@ const player = players.get(target);
       set({ ready: true });
       resetHistoryBaseline();
     },
+
+    currentHandle: () => activeHandle,
   };
 });
