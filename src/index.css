@@ -221,6 +221,9 @@ body {
 /* Transport additions */
 .transport__tap { min-height: 44px; font-weight: 700; }
 .transport__metro { min-height: 44px; }
+.transport__record { min-height: 44px; color: #f43f5e; border-color: #f43f5e; }
+.transport__record.is-on { background: #f43f5e; color: #fff; animation: recPulse 1s ease-in-out infinite; }
+@keyframes recPulse { 50% { opacity: 0.55; } }
 .transport__right { margin-left: auto; display: flex; align-items: center; gap: 0.35rem; }
 .transport__mode { text-transform: capitalize; }
 .transport__gear, .transport__link { font-size: 1rem; padding: 0.2rem 0.5rem; }

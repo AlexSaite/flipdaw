@@ -3,7 +3,10 @@
  * Chain: clipSource -> clipGain -> strip(input->gain->pan->mute) -> master
  *        master -> limiter -> destination
  *        master -> splitter -> analyserL/analyserR (peaks for UI)
+ *        reverb (send bus) input <- strips; reverb output -> masterGain
  */
+
+import { createReverbBus, type ReverbBus } from './reverb';
 
 export interface TrackStrip {
   readonly input: GainNode;
@@ -23,6 +26,8 @@ export interface MasterBus {
 export interface AudioGraph {
   readonly ctx: AudioContext;
   createStrip(): TrackStrip;
+  /** Create a send-reverb bus whose output is wired to the master bus. */
+  createReverb(impulse: AudioBuffer): ReverbBus;
   readonly master: MasterBus;
 }
 
@@ -96,5 +101,11 @@ export function createAudioGraph(ctx: AudioContext): AudioGraph {
     };
   }
 
-  return { ctx, createStrip, master };
+  function createReverb(impulse: AudioBuffer): ReverbBus {
+    const bus = createReverbBus(ctx, impulse);
+    bus.output.connect(masterGain);
+    return bus;
+  }
+
+  return { ctx, createStrip, createReverb, master };
 }

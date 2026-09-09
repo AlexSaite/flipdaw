@@ -21,6 +21,14 @@ export function TransportBar() {
   const setMappingOpen = useUi((s) => s.setMappingOpen);
   const metroEnabled = useSettings((s) => s.metroEnabled);
   const set = useSettings((s) => s.set);
+  const recordState = useGrid((s) => s.recordState);
+  const startRecording = useGrid((s) => s.startRecording);
+  const stopRecording = useGrid((s) => s.stopRecording);
+
+  const onRecord = (): void => {
+    if (recordState === 'idle') void startRecording();
+    else stopRecording();
+  };
 
   const onTapTempo = (): void => {
     const e = getEngine();
@@ -46,6 +54,9 @@ export function TransportBar() {
         <span className="transport__val">{bpm}</span>
       </label>
       <button className="btn transport__tap" onClick={onTapTempo}>TAP</button>
+      <button className={`btn transport__record${recordState !== 'idle' ? ' is-on' : ''}`} onClick={onRecord} title="Record loop">
+        ●{recordState !== 'idle' && ` ${recordState}`}
+      </button>
       <button className={`btn transport__metro${metroEnabled ? ' is-on' : ''}`} onClick={toggleMetro}>
         M
       </button>

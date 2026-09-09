@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import { getEngine } from '../audio/engine';
+import { getEngine, type FollowHooks } from '../audio/engine';
 import { renderDemoLoops } from '../audio/demoLoops';
 import type { ClipPlayer, ClipState } from '../audio/clipPlayer';
-import type { Quantize } from '../audio/transport';
+import type { Quantize, Seconds } from '../audio/transport';
 import type { TrackStrip } from '../audio/graph';
 import { DecodeCache } from '../project/decodeCache';
 import { computePeaks, peaksToJson, type Peaks } from '../project/thumbs';
@@ -15,6 +15,8 @@ import {
 import type { DirHandle, FsAdapter } from '../project/fsAdapter';
 import { toast } from './toasts';
 import { useHistory } from './history';
+import type { RecordState } from '../audio/recorder';
+import type { FollowAction, FollowEvent } from '../audio/follow';
 
 export type CellId = string;
 export const cellId = (trackId: string, scene: number): CellId => `${trackId}:${scene}`;
@@ -94,6 +96,16 @@ interface GridStore {
 
   importFile(file: File): Promise<void>;
 
+  // M3: recording + follow-actions + reverb send
+  recordState: RecordState;
+  follows: Partial<Record<number, FollowAction>>;
+  reverbLevel: number;
+  startRecording(): Promise<boolean>;
+  stopRecording(): void;
+  cancelRecording(): void;
+  setFollowAction(scene: number, action: FollowAction | null): void;
+  setReverbLevel(v: number): void;
+
   init(): Promise<void>;
   resetToDemo(): Promise<void>;
 }
@@ -124,7 +136,7 @@ function buildProjectFromState(): ProjectSchema {
   const g = useGrid.getState();
   const tracks: TrackSchema[] = g.tracks.map((t) => {
     const clips = Object.values(g.cells)
-      .filter((c) => c.trackId === t.id && c.clip)
+      .filter((c) => c.trackId === t.id && c.clip && c.clip.file) // skip session-only recordings
       .sort((a, b) => a.scene - b.scene)
       .map((c) => c.clip as ClipSchema);
     return { id: t.id, name: t.name, color: t.color, gain: t.gain, pan: t.pan, muted: t.muted, solo: t.solo, clips };
@@ -232,6 +244,57 @@ export const useGrid = create<GridStore>((set, get) => {
     h.push(takeSnapshot());
   }
 
+  // ── M3: follow-actions + recording ──────────────────────────────────────
+
+  const followHooks: FollowHooks = {
+    onFollow: (ev: FollowEvent) => {
+      const scene = Number(ev.scene);
+      if (ev.type === 'next' || ev.type === 'afterBars') {
+        launchScene(scene + 1);
+      } else if (ev.type === 'stop') {
+        panicPlayers();
+        toast.info(`Follow: ${ev.type} after ${ev.scene}`);
+      }
+    },
+  };
+
+  function ensureFollow(): void {
+    getEngine().getFollow(followHooks);
+  }
+
+  function panicPlayers(): void {
+    players.forEach((p) => p.panic());
+  }
+
+  /** Start every track's clip at `targetScene` that is armed and idle. */
+  function launchScene(targetScene: number): void {
+    if (targetScene >= get().sceneCount) { panicPlayers(); return; }
+    ensureFollow();
+    for (const t of get().tracks) {
+      const id = cellId(t.id, targetScene);
+      const cell = get().cells[id];
+      const p = players.get(id);
+      if (!cell?.clip || !p || p.state === 'empty' || p.state === 'queued') continue;
+      const res = p.toggle(get().quantize);
+      if (res.action === 'start' && res.atSec !== null) {
+        getEngine().getFollow().sceneStarted(String(targetScene), res.atSec);
+      }
+    }
+  }
+
+  function onRecordedBuffer(buf: AudioBuffer, startSec: Seconds, endSec: Seconds): void {
+    const target = get().selected ?? cellId(get().tracks[0]?.id ?? '', 0);
+    const [trackId, scene] = target.split(':');
+    const lengthBeats = Math.max(1, Math.round(((endSec - startSec) * getEngine().transport.bpm) / 60));
+    const clip: ClipSchema = { id: target, file: '', type: 'loop', lengthBeats, gain: 1, scene: Number(scene) };
+    const player = players.get(target);
+    if (player) { player.attach(buf); player.setGain(clip.gain); }
+    const peaks = computePeaks(buf, 600);
+    set((s) => ({ cells: { ...s.cells, [target]: { ...s.cells[target], clip, peaks } } }));
+    commit();
+    toast.success(`Recorded ${lengthBeats} beats → ${trackId} / scene ${Number(scene) + 1}`);
+  }
+
   return {
     tracks: [],
     sceneCount: 4,
@@ -239,9 +302,19 @@ export const useGrid = create<GridStore>((set, get) => {
     players: {},
     quantize: '1bar',
     ready: false,
+    follows: {},
+    reverbLevel: 0.15,
+    recordState: 'idle',
 
     setQuantize: (q) => set({ quantize: q }),
-    tap: (id) => { players.get(id)?.toggle(get().quantize); },
+    tap: (id) => {
+      const res = players.get(id)?.toggle(get().quantize);
+      if (res?.action === 'start' && res.atSec !== null) {
+        ensureFollow();
+        const scene = get().cells[id]?.scene ?? 0;
+        getEngine().getFollow().sceneStarted(String(scene), res.atSec);
+      }
+    },
 
     selected: null,
     select: (id) => set({ selected: id }),
@@ -375,6 +448,48 @@ export const useGrid = create<GridStore>((set, get) => {
       } catch (e) {
         toast.error(`Import failed: ${(e as Error).message}`);
       }
+    },
+
+    async startRecording() {
+      if (get().recordState !== 'idle') return false;
+      const e = getEngine();
+      if (!e.transport.playing) e.transport.start();
+      const rec = await e.getRecorder({
+        onState: (s) => set({ recordState: s }),
+        onBuffer: onRecordedBuffer,
+      });
+      const startAt = rec.arm();
+      if (startAt === null) return false;
+      e.metronome.setEnabled(true);   // count-in clicks
+      toast.info(`Recording from ${get().projectName === 'Demo' ? 'now' : 'boundary'}`);
+      return true;
+    },
+
+    stopRecording() {
+      void getEngine().getRecorder().then((rec) => { rec.requestStop(); });
+    },
+
+    cancelRecording() {
+      void getEngine().getRecorder().then((rec) => { rec.cancel(); });
+    },
+
+    setFollowAction(scene, action) {
+      set((s) => {
+        const follows = { ...s.follows } as Partial<Record<number, FollowAction>>;
+        if (action === null) delete follows[scene];
+        else follows[scene] = action;
+        return { follows };
+      });
+      ensureFollow();
+      const runner = getEngine().getFollow();
+      if (action === null) runner.removeAction(String(scene));
+      else runner.setAction(String(scene), action);
+    },
+
+    setReverbLevel(v) {
+      const level = Math.min(1, Math.max(0, v));
+      set({ reverbLevel: level });
+      getEngine().getReverb().setLevel(level);
     },
 
     async init() {
