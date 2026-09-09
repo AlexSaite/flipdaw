@@ -14,7 +14,10 @@ interface CellProps {
 
 export function Cell({ id, color, big = false }: CellProps) {
   const state = useGrid((s) => s.cells[id]?.state ?? 'empty');
+  const hasClip = useGrid((s) => Boolean(s.cells[id]?.clip));
+  const selected = useGrid((s) => s.selected === id);
   const tap = useGrid((s) => s.tap);
+  const select = useGrid((s) => s.select);
   const playing = useTransport((s) => s.playing);
   const ringRef = useRef<SVGCircleElement>(null);
   const longRef = useRef<number | null>(null);
@@ -41,15 +44,27 @@ export function Cell({ id, color, big = false }: CellProps) {
     longRef.current = window.setTimeout(() => { longRef.current = null; }, 300);
   };
   const onUp = (): void => {
-    if (longRef.current !== null) { window.clearTimeout(longRef.current); longRef.current = null; tap(id); }
+    if (longRef.current !== null) {
+      window.clearTimeout(longRef.current); longRef.current = null;
+      select(id);
+      tap(id);
+    }
   };
   const onCancel = (): void => {
     if (longRef.current !== null) { window.clearTimeout(longRef.current); longRef.current = null; }
   };
 
+  const cls = [
+    'cell',
+    big ? ' cell--big' : '',
+    ` cell--${state}`,
+    selected ? ' cell--selected' : '',
+    hasClip ? ' cell--has-clip' : '',
+  ].join('');
+
   return (
     <button
-      className={`cell${big ? ' cell--big' : ''} cell--${state}`}
+      className={cls}
       style={{ '--c': color } as React.CSSProperties}
       onPointerDown={onDown}
       onPointerUp={onUp}

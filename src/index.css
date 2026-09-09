@@ -43,7 +43,8 @@ body {
 .transport__val { min-width: 3ch; font-variant-numeric: tabular-nums; }
 .transport__q { margin-left: auto; }
 
-.laptop__main { flex: 1; display: flex; align-items: center; justify-content: center; }
+.laptop__main { flex: 1; display: flex; min-height: 0; }
+.laptop__left { flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; }
 .laptop__loading { color: var(--muted); }
 
 .grid { display: flex; gap: 0.75rem; padding: 1rem; }
@@ -69,6 +70,8 @@ body {
 
 .cell--queued { border-color: var(--c); }
 .cell--playing { background: var(--c); }
+.cell--has-clip { border-color: color-mix(in srgb, var(--c) 60%, var(--line)); }
+.cell--selected { outline: 3px solid var(--text); outline-offset: 2px; }
 .cell--big { width: 128px; height: 128px; }
 
 .cell__ring {
@@ -76,3 +79,94 @@ body {
   width: 100%; height: 100%;
   color: #000;
 }
+
+/* Project bar */
+.projectbar {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.85rem;
+}
+.projectbar__name { font-weight: 600; }
+.projectbar__dot { width: 10px; height: 10px; border-radius: 50%; }
+.projectbar__dot--closed { background: #4b5563; }
+.projectbar__dot--dirty { background: #f59e0b; }
+.projectbar__dot--clean { background: #14b8a6; }
+.projectbar__dirty { color: #f59e0b; }
+.projectbar__actions { margin-left: auto; display: flex; gap: 0.4rem; }
+
+/* Buttons */
+.btn {
+  min-height: 40px;
+  min-width: 40px;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  touch-action: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.btn:hover { border-color: var(--accent); }
+.btn--sm { min-height: 32px; font-size: 0.78rem; padding: 0.2rem 0.6rem; }
+.btn--toggle.is-on { background: var(--accent); color: #0e1013; border-color: var(--accent); }
+
+/* Inspector */
+.inspector {
+  width: 280px;
+  display: flex; flex-direction: column; gap: 1rem;
+  padding: 1rem;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  overflow-y: auto;
+}
+.inspector__empty { color: var(--muted); text-align: center; padding-top: 2rem; }
+.inspector__track {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 700;
+  color: #0e1013;
+  text-align: center;
+}
+.inspector__clip, .inspector__mix, .inspector__meter { display: flex; flex-direction: column; gap: 0.5rem; }
+.inspector h4 { margin: 0; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.inspector__dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.6rem; font-size: 0.8rem; }
+.inspector__dl dt { color: var(--muted); }
+.inspector__dl dd { margin: 0; word-break: break-all; }
+.inspector__muted { color: var(--muted); font-size: 0.85rem; margin: 0; }
+.row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+.row input[type='range'] { flex: 1; min-height: 32px; }
+.row span { min-width: 3.5ch; text-align: right; font-variant-numeric: tabular-nums; }
+.row--btns { gap: 0.5rem; }
+
+/* Meters */
+.meter { background: #12141a; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.meter--v { width: 14px; height: 90px; display: flex; align-items: flex-end; }
+.meter--h { height: 12px; width: 100%; }
+.meter__fill { transition: none; }
+
+/* Waveform */
+.wavethumb { width: 100%; height: 64px; border-radius: 6px; background: #12141a; display: block; }
+
+/* Toasts */
+.toasts {
+  position: fixed; bottom: 1rem; right: 1rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  z-index: 1000;
+}
+.toast {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 0.85rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  touch-action: none;
+}
+.toast--success { border-color: #14b8a6; }
+.toast--error { border-color: #ef4444; }
+.toast--info { border-color: #60a5fa; }
