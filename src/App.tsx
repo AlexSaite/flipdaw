@@ -43,6 +43,8 @@ function App() {
     const s = useSettings.getState();
     getEngine().metronome.setEnabled(s.metroEnabled);
     getEngine().metronome.setGain(s.metroGain);
+    // Seed the demo project on first boot so the canvas is never empty.
+    void useGrid.getState().init();
     const unsubTransport = subscribeTransportToEngine();
     const unbind = bindBridge();
     // Autoplay policy: AudioContext may only start on a user gesture.
