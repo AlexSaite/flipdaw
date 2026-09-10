@@ -36,6 +36,8 @@ export interface DeckBus {
   /** This deck's crossfader gain (0…1). */
   setCross(v: number): void;
   crossGain(): number;
+  /** Channel PPM reading (0..1), post-crossfader (DJM channel meter). */
+  meter(): number;
   dispose(): void;
 }
 
@@ -74,12 +76,17 @@ export function createDeckMixer(ctx: AudioContext, dest: AudioNode): DeckMixer {
     level.gain.value = DECK_LEVEL;
     const cross = ctx.createGain();
     cross.gain.value = 1;
+    const tap = ctx.createAnalyser();
+    tap.fftSize = 512;
+    tap.smoothingTimeConstant = 0.5;
+    const tBuf = new Float32Array(tap.fftSize);
     input.connect(low);
     low.connect(mid);
     mid.connect(high);
     high.connect(level);
     level.connect(cross);
-    cross.connect(mix);
+    cross.connect(tap);
+    tap.connect(mix);
     return {
       input,
       setEq(band, db) {
@@ -93,10 +100,19 @@ export function createDeckMixer(ctx: AudioContext, dest: AudioNode): DeckMixer {
         cross.gain.setValueAtTime(Math.min(1, Math.max(0, v)), ctx.currentTime);
       },
       crossGain: () => cross.gain.value,
+      meter: () => {
+        tap.getFloatTimeDomainData(tBuf);
+        let p = 0;
+        for (let i = 0; i < tBuf.length; i += 1) {
+          const a = Math.abs(tBuf[i]);
+          if (a > p) p = a;
+        }
+        return p;
+      },
       dispose() {
         input.disconnect();
         low.disconnect(); mid.disconnect(); high.disconnect();
-        level.disconnect(); cross.disconnect();
+        level.disconnect(); cross.disconnect(); tap.disconnect();
       },
     };
   }

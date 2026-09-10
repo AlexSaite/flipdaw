@@ -7,6 +7,7 @@ import { StepSequencer } from '../components/StepSequencer';
 import { Piano } from '../components/Piano';
 import { Sampler } from '../components/Sampler';
 import { DJDeck } from '../components/DJDeck';
+import { Turntable } from '../components/Turntable';
 import { Grid } from '../components/Grid';
 import { Inspector } from '../components/Inspector';
 import { Toasts } from '../components/Toasts';
@@ -62,6 +63,7 @@ export function StudioLayout() {
             {activeDeck === 'piano' && <Piano />}
             {activeDeck === 'sampler' && <Sampler />}
             {activeDeck === 'dj' && <DJDeck />}
+            {activeDeck === 'tt' && <Turntable />}
           </div>
         </main>
       </div>

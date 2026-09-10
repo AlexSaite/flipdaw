@@ -38,6 +38,7 @@ interface DeckStore {
   sync(side: DeckSide): void;
   cue(side: DeckSide): void;
   jump(side: DeckSide): void;
+  seek(side: DeckSide, beat: number): void;
   toggleLoop(side: DeckSide): void;
 }
 
@@ -79,6 +80,11 @@ function vmFromDeck(d: Deck): Omit<DeckVM, 'name' | 'file' | 'peaks' | 'eq'> {
 /** Live deck player handle (used by the waveform marker loop). */
 export function deckPlayer(side: DeckSide): Deck {
   return ensureDeck(side);
+}
+
+/** Post-crossfader channel PPM reader (DJMN channel meter, for the UI). */
+export function deckMeter(side: DeckSide): () => number {
+  return () => (side === 'A' ? ensureMixer().deckA.meter() : ensureMixer().deckB.meter());
 }
 
 export const useDeck = create<DeckStore>((set) => ({
@@ -191,6 +197,14 @@ export const useDeck = create<DeckStore>((set) => ({
   jump(side) {
     const d = ensureDeck(side);
     d.jumpCue();
+    const key = vmKey(side);
+    set((s) => ({ [key]: { ...s[key], ...vmFromDeck(d) } }));
+  },
+
+  seek(side, beat) {
+    const d = ensureDeck(side);
+    if (!d.attached) return;
+    d.seek(beat);
     const key = vmKey(side);
     set((s) => ({ [key]: { ...s[key], ...vmFromDeck(d) } }));
   },

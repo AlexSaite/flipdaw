@@ -3,7 +3,7 @@ import { create } from 'zustand';
 export type LayoutMode = 'studio' | 'laptop' | 'tent' | 'mixer';
 
 /** Instrument decks of the Studio workspace (UI-REDESIGN §3). */
-export type DeckKey = 'grid' | 'drum' | 'piano' | 'sampler' | 'dj';
+export type DeckKey = 'grid' | 'drum' | 'piano' | 'sampler' | 'dj' | 'tt';
 
 /** Secondary-control panels rendered as translucent overlays (UI-REDESIGN §4). */
 export type OverlayKey = 'mixer' | 'master' | null;

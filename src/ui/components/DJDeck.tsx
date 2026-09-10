@@ -6,6 +6,8 @@ import { EQ_BANDS, EQ_RANGE_DB, type EqBand } from '../../audio/deckMixer';
 import { useGrid } from '../../store/project';
 import { toast } from '../../store/toasts';
 import { Nameplate } from './Nameplate';
+import { DbMeter } from './DbMeter';
+import { deckMeter } from '../../store/deck';
 
 /**
  * Two-deck DJ surface (M6.3). Decks load a clip from the grid (or any WAV),
@@ -31,6 +33,60 @@ export function DJDeck() {
 
 function vmOf(side: DeckSide) {
   return side === 'A' ? useDeck.getState().deckA : useDeck.getState().deckB;
+}
+
+/** CDJ jog wheel: spins with the track, drag scrubs sample-accurately,
+ *  tap (no movement) toggles play/pause. */
+function DeckJog({ side }: { side: DeckSide }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const drag = useRef<{ y: number; beat: number; moved: boolean } | null>(null);
+
+  useEffect(() => {
+    let raf = 0;
+    const loop = (): void => {
+      const el = ref.current;
+      const d = deckPlayer(side);
+      if (el) el.style.transform = `rotate(${Math.round(d.progress(getEngine().ctx.currentTime) * 720)}deg)`;
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [side]);
+
+  return (
+    <div
+      className="deck__jog"
+      onPointerDown={(e) => {
+        e.preventDefault();
+        const d = deckPlayer(side);
+        drag.current = { y: e.clientY, beat: d.positionBeat(getEngine().ctx.currentTime), moved: false };
+        e.currentTarget.setPointerCapture(e.pointerId);
+      }}
+      onPointerMove={(e) => {
+        const dr = drag.current;
+        if (!dr) return;
+        const dy = e.clientY - dr.y;
+        if (Math.abs(dy) > 4) dr.moved = true;
+        if (dr.moved) useDeck.getState().seek(side, dr.beat - dy * 0.05);
+      }}
+      onPointerUp={() => {
+        const dr = drag.current;
+        drag.current = null;
+        if (dr && !dr.moved) {
+          const vm = vmOf(side);
+          if (vm.state === 'empty') return;
+          if (vm.state === 'playing') useDeck.getState().pause(side);
+          else useDeck.getState().play(side);
+        }
+      }}
+      onPointerCancel={() => { drag.current = null; }}
+      title="Drag to scrub · tap to play/pause"
+    >
+      <div ref={ref} className="deck__jog-ring" />
+      <div className="deck__jog-disp" />
+      <span className="deck__jog-label">JOG</span>
+    </div>
+  );
 }
 
 function DeckCol({ side }: { side: DeckSide }) {
@@ -73,7 +129,12 @@ function DeckCol({ side }: { side: DeckSide }) {
           <input ref={fileRef} type="file" accept="audio/wav,audio/x-wav,.wav" hidden onChange={() => void onFile()} />
         </div>
       </div>
+      <DeckJog side={side} />
       <DeckWave side={side} />
+      <div className="deck__chan-meter">
+        <span className="deck__silk">LvL</span>
+        <DbMeter vertical={false} read={deckMeter(side)} />
+      </div>
       <div className="deck__eq">
         {EQ_BANDS.map((band) => <EqTrack key={band} side={side} band={band} />)}
       </div>

@@ -7,6 +7,7 @@ import { usePiano } from '../../store/piano';
 import { PianoModel } from '../../piano/model';
 import { useSampler } from '../../store/sampler';
 import { useDeck } from '../../store/deck';
+import { useTurntable } from '../../store/turntable';
 import { useGrid, cellId } from '../../store/project';
 import { useUi, type DeckKey } from '../../store/ui';
 
@@ -114,6 +115,15 @@ function DJPreview() {
   );
 }
 
+function TurntablePreview() {
+  const state = useTurntable((s) => s.vm.state);
+  return (
+    <div className={`pvtt${state === 'spinning' ? ' is-spinning' : ''}`} title="Turntable">
+      <span className="pvtt__platter" />
+    </div>
+  );
+}
+
 function GridPreview() {
   const tracks = useGrid((s) => s.tracks);
   const sceneCount = useGrid((s) => s.sceneCount);
@@ -144,6 +154,7 @@ const DECKS: { key: DeckKey; label: string; title: string; model?: string }[] = 
   { key: 'piano', label: 'Piano', title: 'Piano keys', model: 'VL-1' },
   { key: 'sampler', label: 'Sampler', title: 'Pad sampler', model: 'MPC' },
   { key: 'dj', label: 'Decks', title: 'DJ decks', model: 'CDJ' },
+  { key: 'tt', label: 'Vinyl', title: 'Turntable deck', model: 'SL-1200' },
 ];
 
 /** Compact deck switcher: previews of every instrument, tap to expand. */
@@ -167,6 +178,7 @@ export function DeckDock() {
             {d.key === 'piano' && <PianoPreview />}
             {d.key === 'sampler' && <SamplerPreview />}
             {d.key === 'dj' && <DJPreview />}
+            {d.key === 'tt' && <TurntablePreview />}
           </span>
           <span className="deckdock__label">
             {d.label}

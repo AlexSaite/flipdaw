@@ -106,6 +106,7 @@ export function StepSequencer() {
     <section className="seq skin-909">
       <div className="seq__head">
         <Nameplate model="TR-909" name="DRUM SEQUENCER" />
+        <span className={`seq__beat${playing ? ' is-on' : ''}`} title={playing ? 'Bar beat LED' : 'Not running'} />
         <div className="seq__head-group">
           {patterns.map((p) => (
             <button

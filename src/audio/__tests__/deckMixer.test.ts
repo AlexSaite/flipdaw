@@ -26,6 +26,16 @@ function makeCtx() {
         disconnect() {},
       } as unknown as BiquadFilterNode;
     },
+    createAnalyser() {
+      const buf = new Float32Array(512).fill(0);
+      return {
+        fftSize: 512,
+        smoothingTimeConstant: 0.5,
+        getFloatTimeDomainData(arr: Float32Array) { arr.set(buf); },
+        connect() {},
+        disconnect() {},
+      } as unknown as AnalyserNode;
+    },
   } as unknown as AudioContext;
   return ctx;
 }
