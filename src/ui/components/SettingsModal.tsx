@@ -2,6 +2,7 @@ import { useUi } from '../../store/ui';
 import { useSettings, type Theme, type LatencyPreset, type Density, type MeterMode } from '../../store/settings';
 import { getEngine } from '../../audio/engine';
 import { getHinge } from '../../bridge/bind';
+import { BackdropOverlay } from '../studio/BackdropOverlay';
 
 export function SettingsModal() {
   const open = useUi((s) => s.settingsOpen);
@@ -19,8 +20,8 @@ export function SettingsModal() {
   };
 
   return (
-    <div className="modal-backdrop" onPointerDown={() => setOpen(false)}>
-      <div className="modal" onPointerDown={(e) => e.stopPropagation()}>
+    <BackdropOverlay onClose={() => setOpen(false)} align="center">
+      <div className="modal">
         <h3>Settings</h3>
 
         <label className="modal__row">
@@ -86,6 +87,6 @@ export function SettingsModal() {
 
         <button className="btn modal__close" onClick={() => setOpen(false)}>Done</button>
       </div>
-    </div>
+    </BackdropOverlay>
   );
 }

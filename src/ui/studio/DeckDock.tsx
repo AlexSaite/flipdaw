@@ -138,12 +138,12 @@ function GridPreview() {
   );
 }
 
-const DECKS: { key: DeckKey; label: string; title: string }[] = [
+const DECKS: { key: DeckKey; label: string; title: string; model?: string }[] = [
   { key: 'grid', label: 'Grid', title: 'Clip grid' },
-  { key: 'drum', label: 'Drum', title: '16-voice step sequencer' },
-  { key: 'piano', label: 'Piano', title: 'Piano keys' },
-  { key: 'sampler', label: 'Sampler', title: 'Pad sampler' },
-  { key: 'dj', label: 'Decks', title: 'DJ decks' },
+  { key: 'drum', label: 'Drum', title: '16-voice step sequencer', model: 'TR-909' },
+  { key: 'piano', label: 'Piano', title: 'Piano keys', model: 'VL-1' },
+  { key: 'sampler', label: 'Sampler', title: 'Pad sampler', model: 'MPC' },
+  { key: 'dj', label: 'Decks', title: 'DJ decks', model: 'CDJ' },
 ];
 
 /** Compact deck switcher: previews of every instrument, tap to expand. */
@@ -168,7 +168,10 @@ export function DeckDock() {
             {d.key === 'sampler' && <SamplerPreview />}
             {d.key === 'dj' && <DJPreview />}
           </span>
-          <span className="deckdock__label">{d.label}</span>
+          <span className="deckdock__label">
+            {d.label}
+            {d.model && <em className="deckdock__model">{d.model}</em>}
+          </span>
         </button>
       ))}
     </div>

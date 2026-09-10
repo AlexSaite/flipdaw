@@ -4,6 +4,7 @@ import { useTransport } from '../../store/transport';
 import { getEngine } from '../../audio/engine';
 import { MAX_STEPS } from '../../sequencer/model';
 import { kitLabel } from '../../sequencer/kits';
+import { Nameplate } from './Nameplate';
 import type { StepCell } from '../../sequencer/model';
 
 const LENGTHS = [8, 16, 32];
@@ -102,8 +103,9 @@ export function StepSequencer() {
   const gridCols = `${HEAD_W}px repeat(${pattern.length}, ${CELL}px)`;
 
   return (
-    <section className="seq">
+    <section className="seq skin-909">
       <div className="seq__head">
+        <Nameplate model="TR-909" name="DRUM SEQUENCER" />
         <div className="seq__head-group">
           {patterns.map((p) => (
             <button

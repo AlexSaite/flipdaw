@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { useSampler } from '../../store/sampler';
 import { SAMPLER_PADS, type ChopMode, type PadMode } from '../../sampler/model';
+import { Nameplate } from './Nameplate';
 
 /**
  * Pad sampler (M6.2). 4x2 grid over decoded WAVs. Mode (loop/one-shot) and
@@ -55,10 +56,10 @@ export function Sampler() {
   };
 
   return (
-    <section className="sampler">
+    <section className="sampler skin-mpc">
       <div className="sampler__head">
         <div className="seq__head-group">
-          <span className="seq__ctl-label">Sampler</span>
+          <Nameplate model="MPC" name="PAD SAMPLER" />
           <div className="seg">
             {(['loop', 'oneshot'] as PadMode[]).map((m) => (
               <button key={m} className={`seg-btn${mode === m ? ' is-on' : ''}`} onClick={() => setMode(m)} title={`${m} playback`}>

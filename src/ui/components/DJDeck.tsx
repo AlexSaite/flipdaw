@@ -5,6 +5,7 @@ import { drawPeaks } from '../../project/thumbs';
 import { EQ_BANDS, EQ_RANGE_DB, type EqBand } from '../../audio/deckMixer';
 import { useGrid } from '../../store/project';
 import { toast } from '../../store/toasts';
+import { Nameplate } from './Nameplate';
 
 /**
  * Two-deck DJ surface (M6.3). Decks load a clip from the grid (or any WAV),
@@ -14,9 +15,9 @@ import { toast } from '../../store/toasts';
  */
 export function DJDeck() {
   return (
-    <section className="deck">
+    <section className="deck skin-cdj">
       <div className="seq__head-group">
-        <span className="seq__ctl-label">Decks</span>
+        <Nameplate model="CDJ-900NXS" name="DJ STATION" />
         <span className="deck__hint">bar-quantized · fixed pitch (ADR-012)</span>
       </div>
       <div className="deck__cols">

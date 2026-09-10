@@ -1,6 +1,7 @@
 import { type PointerEvent } from 'react';
 import { usePiano } from '../../store/piano';
 import { PianoModel, noteLabel, OCTAVE_MIN, OCTAVE_MAX } from '../../piano/model';
+import { Nameplate } from './Nameplate';
 
 /**
  * Touch piano (M6.1). Two octaves per screen, octave ± chips, sustain.
@@ -35,9 +36,9 @@ export function Piano() {
   const up = (midi: number) => () => noteOff(midi);
 
   return (
-    <section className="piano">
+    <section className="piano skin-vl1">
       <div className="piano__head">
-        <span className="seq__ctl-label">Keys</span>
+        <Nameplate model="VL-1" name="MONO KEYS" />
         <button
           className="transport__step"
           onClick={() => setOctave(octave - 1)}
