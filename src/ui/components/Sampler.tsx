@@ -60,6 +60,14 @@ export function Sampler() {
       <div className="sampler__head">
         <div className="seq__head-group">
           <Nameplate model="MPC" name="PAD SAMPLER" />
+          <div className="mpc__disp">
+            <span className="mpc__disp-val">
+              {mode === 'loop' ? '∞ LOOP' : '▶ SHOT'}
+              {chromatic ? ' · CHROM' : ''}
+            </span>
+            <span className="mpc__disp-val">{pads.filter((p) => p.buffer).length} / {SAMPLER_PADS} PADS</span>
+          </div>
+          <span className="mpc__silk">BANK A · 12-BIT · 40kHz</span>
           <div className="seg">
             {(['loop', 'oneshot'] as PadMode[]).map((m) => (
               <button key={m} className={`seg-btn${mode === m ? ' is-on' : ''}`} onClick={() => setMode(m)} title={`${m} playback`}>
@@ -99,7 +107,8 @@ export function Sampler() {
                 disabled={empty}
                 title={empty ? `Load a WAV into pad ${i + 1}` : `${pad.name} (${pad.file})`}
               >
-                {empty ? '+' : pad.name}
+                <span className="sampler__pad-num">{i + 1}</span>
+                <span className="sampler__pad-name">{empty ? '+' : pad.name}</span>
               </button>
               <div className="sampler__tools">
                 <button className="sampler__tool" onClick={() => pick(i)} title="Load WAV">⇪</button>

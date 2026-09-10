@@ -107,6 +107,12 @@ export function StepSequencer() {
       <div className="seq__head">
         <Nameplate model="TR-909" name="DRUM SEQUENCER" />
         <span className={`seq__beat${playing ? ' is-on' : ''}`} title={playing ? 'Bar beat LED' : 'Not running'} />
+        <div className="seq__lcd">
+          <span className="seq__lcd-label">PAT</span>
+          <span className="seq__lcd-val">{pattern.name}</span>
+          <span className="seq__lcd-label">RUN</span>
+          <span className="seq__lcd-val">{playing ? 'YES' : 'NO'}</span>
+        </div>
         <div className="seq__head-group">
           {patterns.map((p) => (
             <button
@@ -222,6 +228,20 @@ export function StepSequencer() {
             {p.name}
           </button>
         ))}
+      </div>
+
+      <div className="seq__keys">
+        <button
+          className={`hw-seg-btn seq__start${playing ? ' is-on' : ''}`}
+          onClick={() => useTransport.getState().togglePlay()}
+          title="START (transport)"
+        >
+          START
+        </button>
+        <button className="hw-seg-btn seq__stop" onClick={() => useTransport.getState().stopAll()} title="STOP/CONTINUE (panic)">
+          STOP/CONT
+        </button>
+        <span className="seq__silk">TR-REC · LAST STEP · SHUFFLE/FLAM</span>
       </div>
 
       <input ref={fileRef} type="file" accept="audio/wav,.wav" hidden onChange={onFile} />

@@ -894,19 +894,101 @@ body {
 .tt__load { display: flex; gap: 0.5rem; }
 .tt__level { display: flex; align-items: center; gap: 0.6rem; }
 .tt__level .fader--horizontal .fader__track { width: 140px; }
-.pvtt {
-  width: 58px; height: 58px; border-radius: 50%;
-  background: radial-gradient(circle, #1d2027 0 38%, #0b0d11 39% 100%);
-  box-shadow: inset 0 0 8px #000;
-  display: flex; align-items: center; justify-content: center;
+
+/* ---- Module skin amp-up: LCD / display windows, silk strips, per-vendor palettes ---- */
+
+/* TR-909: green VFD display window + pill START/STOP keys + brushed face */
+.skin-909 .seq__head { gap: 0.7rem; }
+.seq__lcd {
+  display: flex; align-items: center; gap: 0.35rem;
+  padding: 0.26rem 0.7rem; border-radius: 5px;
+  background: linear-gradient(180deg, #0a1710, #06110b);
+  color: #7dffa8; font-weight: 700;
+  font-family: "Courier New", ui-monospace, monospace;
+  box-shadow: inset 0 0 0 1px #1d3324, inset 0 0 10px rgba(80, 255, 140, 0.25), 0 0 12px -4px rgba(125, 255, 168, 0.5);
 }
-.pvtt__platter {
-  width: 38px; height: 38px; border-radius: 50%;
-  background: repeating-radial-gradient(circle, #050507 0 1.5px, #101218 2px 3px);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+.seq__lcd-label { font-size: 0.5rem; letter-spacing: 0.22em; text-transform: uppercase; color: #4f8a63; opacity: 0.8; }
+.seq__lcd-val { font-size: 0.8rem; letter-spacing: 0.05em; text-shadow: 0 0 6px rgba(125, 255, 168, 0.55); }
+.seq__keys { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.seq__keys .seq__silk { margin-left: auto; }
+.seq__start, .seq__stop {
+  border-radius: 999px; font-weight: 900; letter-spacing: 0.08em; padding: 0.35rem 1.1rem;
 }
-.pvtt.is-spinning .pvtt__platter { animation: ttspin 1.4s linear infinite; }
-@keyframes ttspin { to { transform: rotate(360deg); } }
+.seq__start { background: linear-gradient(180deg, #4ade80, #15803d); color: #04250e; box-shadow: inset 0 2px 0 rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.6); }
+.seq__start.is-on { background: linear-gradient(180deg, #86efac, #22c55e); box-shadow: 0 0 16px -3px #4ade80, inset 0 2px 0 rgba(255,255,255,0.5); }
+.seq__stop { background: linear-gradient(180deg, #f87171, #b91c1c); color: #2a0505; box-shadow: inset 0 2px 0 rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.6); }
+.seq__silk { font-size: 0.5rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--muted); }
+.skin-909 .seq__board { outline: 1px solid rgba(244, 63, 94, 0.25); }
+.skin-909 .seq__pad.is-on { text-shadow: 0 0 4px rgba(255,255,255,0.5); font-weight: 800; }
+
+/* CDJ-900NXS: per-deck track LCD (blue OS screen) + hot-state flags */
+.deck__disp {
+  display: flex; flex-direction: column; gap: 0.3rem; padding: 0.4rem 0.6rem;
+  background: linear-gradient(180deg, #0a1626, #07101c);
+  border: 1px solid #1b2f45; border-radius: 6px;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.9), 0 0 14px -6px rgba(56, 189, 248, 0.6);
+}
+.deck__disp-row { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; min-width: 0; }
+.deck__disp-name { font-size: 0.72rem; color: #bfe9ff; letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.deck__disp-time { font-variant-numeric: tabular-nums; color: #38bdf8; font-weight: 800; letter-spacing: 0.08em; }
+.deck__flags { display: flex; gap: 0.45rem; }
+.deck__flag {
+  font-size: 0.5rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 800;
+  color: #3d5a70; border: 1px solid #1d3043; border-radius: 3px; padding: 0.05rem 0.4rem;
+}
+.deck__flag.is-on { color: #38bdf8; border-color: #38bdf8; box-shadow: 0 0 8px -2px #38bdf8; }
+
+/* MPC60: charcoal plate, green CRT-style status line, pad numbers, Akai-red tools */
+.skin-mpc .mpc__disp {
+  display: flex; align-items: center; gap: 0.8rem; padding: 0.26rem 0.7rem;
+  background: linear-gradient(180deg, #0c2410 0%, #081a0c 100%);
+  border: 1px solid #21512a; border-radius: 4px; color: #7cf98e;
+  font-family: "Courier New", ui-monospace, monospace; font-weight: 700;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.8), inset 0 0 18px rgba(80, 255, 120, 0.14);
+}
+.mpc__disp-val { font-size: 0.72rem; letter-spacing: 0.08em; }
+.mpc__silk { font-size: 0.5rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--muted); }
+.skin-mpc .mpc__silk { color: #8db791; }
+.skin-mpc .sampler__pad { flex-direction: column; justify-content: center; gap: 0.35rem; padding: 0.4rem; }
+.skin-mpc .sampler__pad-num {
+  font-size: 0.5rem; letter-spacing: 0.1em; color: #f87171; opacity: 0.9;
+}
+.skin-mpc .sampler__pad-name { font-size: 0.68rem; letter-spacing: 0.08em; text-align: center; }
+.skin-mpc .sampler__tool {
+  background: linear-gradient(180deg, #4f1b1b, #2b0d0d);
+  color: #fca5a5; border-color: #591212;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 1px 0 #000;
+}
+.skin-mpc .sampler__tool.is-on { background: #ef4444; color: #2a0505; border-color: #ef4444; box-shadow: 0 0 12px -2px #ef4444; }
+
+/* VL-1: cream plastic casing, die-cast head with amber LCD window, speaker grill */
+.skin-vl1 .piano__head { gap: 0.7rem; }
+.piano__lcd {
+  display: flex; align-items: center; gap: 0.35rem; padding: 0.24rem 0.7rem;
+  background: linear-gradient(180deg, #2b1408, #180b04);
+  border: 1px solid #a3712f; border-radius: 4px;
+  color: #ffb84d; font-weight: 800; font-family: "Courier New", ui-monospace, monospace;
+  box-shadow: inset 0 0 10px rgba(255, 160, 40, 0.3), inset 0 0 0 2px #1c0f05, 0 0 12px -4px rgba(255, 184, 77, 0.55);
+}
+.piano__lcd-label { font-size: 0.5rem; letter-spacing: 0.2em; text-transform: uppercase; color: #9a6a33; }
+.piano__lcd-val { font-size: 0.85rem; letter-spacing: 0.08em; text-shadow: 0 0 5px rgba(255, 184, 77, 0.6); }
+.piano__speaker {
+  height: 26px; border-radius: 4px;
+  background:
+    radial-gradient(circle, #17191d 0 27%, #000 28% 37%, transparent 38%);
+  background-size: 10px 10px;
+  background-color: #0d0e11;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.9), 0 1px 0 rgba(255, 255, 255, 0.08);
+  margin-top: 0.5rem;
+}
+.skin-vl1 {
+  background:
+    radial-gradient(140% 90% at 50% 0%, rgba(255, 255, 255, 0.16), transparent 55%),
+    linear-gradient(160deg, #efe9da 0%, #dcd4bf 55%, #cabea2 100%);
+  border-top: 4px solid #a2793c;
+}
+.skin-vl1 .nameplate__model { color: #8a5f1f; }
+.skin-vl1 .piano__oct { color: #6b4a14; }
 
 /* ---- Launchpad grid (clip grid): LED cells + action zone ---- */
 .skin-launchpad { flex-direction: column; background: linear-gradient(180deg, #171a20 0%, #101217 100%); }
@@ -986,96 +1068,87 @@ body {
 
 /* Deck dock: live previews, tap to expand, horizontal swipe scroll */
 .deckdock {
-  display: flex; gap: 0.6rem; align-items: flex-end;
+  display: flex; gap: 0.6rem; align-items: stretch;
   padding: 0.5rem 1rem;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
   overflow-x: auto;
   overscroll-behavior-x: contain;
-  touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
 }
 .deckdock__card {
-  flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px;
-  min-width: 104px; padding: 6px 8px;
+  flex: 1 1 190px; max-width: 215px; min-width: 170px;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 7px 8px;
   background: var(--bg); color: var(--text);
   border: 1px solid var(--line); border-radius: 12px;
-  touch-action: pan-x;
   cursor: pointer;
+  touch-action: manipulation;
 }
-.deckdock__card.is-active { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 1px; }
-.deckdock__prev { display: flex; align-items: center; justify-content: center; height: 64px; }
+.deckdock__card:hover, .deckdock__card:focus-visible { border-color: var(--muted); outline: none; }
+.deckdock__card.is-open { border-color: var(--accent); }
+.deckdock__card.is-focused { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+.deckdock__mini {
+  position: relative; width: 178px; height: 112px; flex: none;
+  border-radius: 9px; overflow: hidden;
+  background: #0b0d11;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.75);
+}
+/* The live module page, scaled to a postcard. Real skins, LEDs, meters. */
+.miniplay {
+  position: absolute; left: 0; top: 0;
+  width: 890px; height: 560px;
+  transform: scale(0.2);
+  transform-origin: 0 0;
+  pointer-events: none;
+}
 .deckdock__label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
-.deckdock__model { display: block; font-style: normal; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); opacity: 0.75; margin-top: 2px; }
-.deckdock__card.is-active .deckdock__label { color: var(--accent); }
-.deckdock__card.is-active .deckdock__model { color: var(--accent); opacity: 1; }
+.deckdock__model { display: block; font-style: normal; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); opacity: 0.8; margin-top: 2px; }
+.deckdock__card.is-open .deckdock__label, .deckdock__card.is-open .deckdock__model { color: var(--accent); opacity: 1; }
+.deckdock__card.is-open .deckdock__mini { box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.75), 0 0 0 1px var(--accent); }
 
-/* Live previews */
-.pvdrum { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 3px; }
-.pvdrum__row { display: grid; gap: 2px; }
-.pvdrum__pad { width: 10px; height: 10px; border-radius: 2px; background: var(--bg); border: 1px solid var(--line); }
-.pvdrum__pad.is-on { background: currentColor; border-color: currentColor; }
-.pvdrum__headbar { position: absolute; top: 3px; bottom: 3px; width: 2px; background: #fff; opacity: 0.85; pointer-events: none; z-index: 2; }
-
-.pvkeys { position: relative; display: flex; width: 132px; height: 52px; border-radius: 6px; overflow: hidden; }
-.pvkeys__w { position: relative; flex: 1; min-width: 0; background: #dfe3ea; border: 1px solid var(--line); }
-.pvkeys__w.is-on { background: var(--accent); }
-.pvkeys__b { position: absolute; top: 0; height: 58%; z-index: 2; background: #14161a; border: 1px solid #000; border-radius: 0 0 3px 3px; }
-.pvkeys__b.is-on { background: var(--accent); }
-
-.pvpad-grid { display: grid; grid-template-columns: repeat(4, 22px); grid-auto-rows: 22px; gap: 4px; }
-.pvpad {
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; color: var(--muted);
-  background: var(--bg); border: 1px dashed var(--line); border-radius: 5px;
+/* Stage: 0..N open modules as tiled windows */
+.studio__stage {
+  flex: 1 1 auto; min-height: 0; min-width: 0;
+  display: flex; flex-wrap: wrap; align-items: stretch;
+  gap: 8px; padding: 8px 10px;
+  overflow: auto;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
 }
-.pvpad.has { border: 1px solid var(--accent); }
-.pvpad-meta { grid-column: 1 / -1; font-size: 10px; color: var(--muted); text-align: center; white-space: nowrap; }
-
-.pvdj { display: flex; align-items: center; gap: 6px; width: 156px; }
-.pvdj__chan {
-  display: flex; align-items: center; justify-content: center;
-  width: 38px; height: 26px; border-radius: 5px;
-  font-size: 0.7rem; font-weight: 700; color: var(--muted);
-  background: var(--bg); border: 1px solid var(--line);
-}
-.pvdj__chan.is-on { background: var(--accent); border-color: var(--accent); color: #0e1013; }
-.pvdj__fader { position: relative; flex: 1; height: 22px; background: var(--bg); border: 1px solid var(--line); border-radius: 11px; }
-.pvdj__thumb { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 12px; height: 12px; border-radius: 50%; background: var(--accent); }
-
-.pvgrid { display: flex; gap: 3px; padding: 3px; }
-.pvgrid__col { display: flex; flex-direction: column; gap: 3px; }
-.pvcell { width: 10px; height: 10px; border-radius: 2px; background: var(--bg); border: 1px solid var(--line); }
-.pvcell.has { background: currentColor; border-color: currentColor; }
-
-/* Workspace: one expanded deck, container for Phase B sizing */
-.studio__workspace {
-  flex: 1 0 auto; min-height: 0; min-width: 0;
+.stage-tile {
+  flex: 1 1 0%; min-width: 340px;
   display: flex; flex-direction: column;
-  container-type: inline-size;
-  container-name: studio;
-}
-.studio__deckhead {
-  display: flex; align-items: center; gap: 0.6rem;
-  padding: 0.4rem 1rem;
+  border: 1px solid var(--line); border-radius: 12px;
   background: var(--panel);
-  border-bottom: 1px solid var(--line);
+  overflow: hidden;
 }
-.studio__decklabel { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
-.studio__deckbody { flex: 1 0 auto; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; touch-action: pan-y; }
+.stage-tile.is-focused { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.45), 0 10px 28px rgba(0, 0, 0, 0.4); }
+.stage-tile__head {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.35rem 0.75rem 0.4rem;
+  background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.stage-tile__meta { font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+.stage-tile__spacer { flex: 1; }
+.stage-tile__ctl {
+  min-width: 40px; min-height: 40px; border-radius: 8px;
+  background: var(--bg); color: var(--muted);
+  border: 1px solid var(--line); font-size: 0.9rem;
+  touch-action: none; cursor: pointer;
+}
+.stage-tile__ctl:hover { color: var(--text); }
+.stage-tile__ctl:active { transform: translateY(1px); }
+.stage-tile__ctl--close { color: #f43f5e; }
+.stage-tile__body {
+  flex: 1 1 auto; min-height: 0; min-width: 0;
+  overflow-y: auto; overscroll-behavior-y: contain; touch-action: pan-y;
+}
+.stage-tile__body .studio__gridwrap { min-height: auto; }
+
 .studio__gridwrap { display: flex; min-height: 100%; }
 .studio__gridleft { flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; padding: 0.5rem; }
 
-/* Anti-empty scaling (§5): controls grow with free space, never huddle in a corner. */
-@container studio (min-width: 1100px) {
-  .studio__deckhead { padding: 0.6rem 1.25rem; }
-  .studio__decklabel { font-size: 0.9rem; }
-  .studio__deckbody { padding: 0.25rem 1rem; }
-}
-@container studio (max-width: 700px) {
-  .studio__deckhead { padding: 0.3rem 0.6rem; }
-  .studio__decklabel { font-size: 0.66rem; }
-}
 @container studio-body (min-width: 1240px) {
   .deckdock { padding: 0.9rem 1.25rem; gap: 1rem; }
   .studio__footer { padding: 0.6rem 1.25rem; }

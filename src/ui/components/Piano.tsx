@@ -47,7 +47,11 @@ export function Piano() {
         >
           −
         </button>
-        <span className="transport__val transport__val--big">C{octave}</span>
+        <div className="piano__lcd">
+          <span className="piano__lcd-label">OCT</span>
+          <span className="piano__lcd-val">C{octave}</span>
+          <span className="piano__lcd-label">{naturals.length} keys</span>
+        </div>
         <button
           className="transport__step"
           onClick={() => setOctave(octave + 1)}
@@ -95,6 +99,8 @@ export function Piano() {
           />
         ))}
       </div>
+
+      <div className="piano__speaker" aria-hidden="true" />
     </section>
   );
 }

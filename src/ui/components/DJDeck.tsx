@@ -89,6 +89,43 @@ function DeckJog({ side }: { side: DeckSide }) {
   );
 }
 
+/** CDJ LCD block: live track name + bar/beat readout + state flags.
+ *  Time is written to a ref in rAF (no re-render); ADR-001. */
+function DeckDisplay({ side }: { side: DeckSide }) {
+  const vm = useDeck((s) => (side === 'A' ? s.deckA : s.deckB));
+  const timeRef = useRef<HTMLSpanElement | null>(null);
+
+  useEffect(() => {
+    let raf = 0;
+    const loop = (): void => {
+      const el = timeRef.current;
+      if (el) {
+        const d = deckPlayer(side);
+        const now = getEngine().ctx.currentTime;
+        const beats = d.attached ? d.positionBeat(now) : 0;
+        el.textContent = `${Math.floor(beats / 4)}:${String(Math.floor(beats % 4)).padStart(2, '0')}`;
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [side]);
+
+  return (
+    <div className="deck__disp">
+      <div className="deck__disp-row">
+        <span className="deck__disp-name">{vm.file ? vm.file.split('/').pop() : vm.name}</span>
+        <span ref={timeRef} className="deck__disp-time">0:00</span>
+      </div>
+      <div className="deck__flags">
+        <span className={`deck__flag${vm.cueBeat !== null ? ' is-on' : ''}`}>CUE</span>
+        <span className={`deck__flag${vm.loopBeats !== null ? ' is-on' : ''}`}>LOOP</span>
+        <span className={`deck__flag${vm.state === 'playing' ? ' is-on' : ''}`}>PLAY</span>
+      </div>
+    </div>
+  );
+}
+
 function DeckCol({ side }: { side: DeckSide }) {
   const vm = useDeck((s) => (side === 'A' ? s.deckA : s.deckB));
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -130,6 +167,7 @@ function DeckCol({ side }: { side: DeckSide }) {
         </div>
       </div>
       <DeckJog side={side} />
+      <DeckDisplay side={side} />
       <DeckWave side={side} />
       <div className="deck__chan-meter">
         <span className="deck__silk">LvL</span>
