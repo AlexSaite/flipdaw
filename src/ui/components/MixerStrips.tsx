@@ -17,8 +17,8 @@ export function MixerStrips() {
         <div key={t.id} className="mixer__strip" style={{ '--c': t.color } as React.CSSProperties}>
           <div className="mixer__head">{t.name}</div>
           <Meter trackId={t.id} vertical />
-          <Fader orientation="vertical" value={t.gain} onChange={(v) => setGain(t.id, v)} label="vol" />
-          <Fader orientation="vertical" value={(t.pan + 1) / 2} onChange={(v) => setPan(t.id, v * 2 - 1)} label="pan" />
+          <Fader orientation="vertical" value={t.gain} onChange={(v) => setGain(t.id, v)} label="vol" step={0.01} fmt={(v) => `${Math.round(v * 100)}%`} />
+          <Fader orientation="vertical" value={(t.pan + 1) / 2} onChange={(v) => setPan(t.id, v * 2 - 1)} label="pan" step={0.01} fmt={(v) => `L${Math.round(v * 100)}R`} />
           <div className="mixer__btns">
             <button className={`btn btn--toggle mixer__ms${t.muted ? ' is-on' : ''}`}
               onClick={() => setMute(t.id, !t.muted)}>M</button>

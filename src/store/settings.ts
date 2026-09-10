@@ -3,6 +3,7 @@ import { create } from 'zustand';
 export type Theme = 'dark' | 'light';
 export type LatencyPreset = 'fast' | 'standard' | 'safe';
 export type Density = 'comfort' | 'dense';
+export type MeterMode = 'ppm' | 'loudness';
 
 export interface Settings {
   theme: Theme;
@@ -11,6 +12,8 @@ export interface Settings {
   metroEnabled: boolean;
   autosaveSec: number;      // 0 = off
   density: Density;
+  /** Master meter: PPM peak (three-colour) or EBU R128-style loudness. */
+  meterMode: MeterMode;
 }
 
 interface SettingsStore extends Settings {
@@ -27,6 +30,7 @@ const DEFAULTS: Settings = {
   metroEnabled: false,
   autosaveSec: 60,
   density: 'comfort',
+  meterMode: 'ppm',
 };
 
 function load(): Settings {
@@ -48,6 +52,7 @@ export const useSettings = create<SettingsStore>((set, get) => ({
     const plain: Settings = {
       theme: next.theme, latency: next.latency, metroGain: next.metroGain,
       metroEnabled: next.metroEnabled, autosaveSec: next.autosaveSec, density: next.density,
+      meterMode: next.meterMode,
     };
     localStorage.setItem(KEY, JSON.stringify(plain));
     set(partial);

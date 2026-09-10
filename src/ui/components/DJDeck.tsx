@@ -174,7 +174,7 @@ function Crossfader() {
           const d = drag.current;
           if (!d || !ref.current) return;
           const dx = e.clientX - d.x;
-          useDeck.getState().setCross(d.v + dx / ref.current.clientWidth);
+          useDeck.getState().setCross(Math.round((d.v + dx / ref.current.clientWidth) * 100) / 100);
         }}
         onPointerUp={() => { drag.current = null; }}
         onPointerCancel={() => { drag.current = null; }}
@@ -183,6 +183,7 @@ function Crossfader() {
         <div className="deck__xfade-notch" />
       </div>
       <span className="deck__xfade-side">B</span>
+      <span className="deck__xfade-value">{Math.round(cross * 100)}%</span>
     </div>
   );
 }

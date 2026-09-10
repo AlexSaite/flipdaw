@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { getEngine } from '../../audio/engine';
 import { MixerStrips } from '../components/MixerStrips';
 import { Fader } from '../components/Fader';
+import { DbMeter } from '../components/DbMeter';
+import { useSettings } from '../../store/settings';
 
 /** Mixer as a translucent studio overlay (UI-REDESIGN §4). */
 export function MixerPanel() {
@@ -15,30 +17,19 @@ export function MixerPanel() {
   );
 }
 
-/** Master gain + peak meter overlay. Color zones land in Phase B (§7). */
+/** Master gain + peak/loudness meter overlay (UI-REDESIGN §4, §7). */
 export function MasterPanel() {
   const [gain, setGain] = useState(0.9);
-  const fillRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    let raf = 0;
-    const loop = (): void => {
-      const el = fillRef.current;
-      if (el) {
-        const [l, r] = getEngine().graph.master.meter();
-        const pct = Math.min(1, Math.max(0, Math.max(l, r)) * 1.6);
-        el.style.height = `${pct * 100}%`;
-        el.style.background = pct > 0.9 ? '#ef4444' : pct > 0.7 ? '#f59e0b' : '#14b8a6';
-      }
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, []);
+  const meterMode = useSettings((s) => s.meterMode);
 
   const onGain = (v: number): void => {
     setGain(v);
     getEngine().graph.master.setGain(v);
+  };
+
+  const readMaster = (): number => {
+    const [l, r] = getEngine().graph.master.meter();
+    return Math.max(l, r);
   };
 
   return (
@@ -47,12 +38,14 @@ export function MasterPanel() {
       <div className="studio__master">
         <div className="mixer__strip mixer__strip--master">
           <div className="mixer__head">Master</div>
-          <div className="meter meter--v">
-            <div ref={fillRef} className="meter__fill" />
-          </div>
-          <Fader orientation="vertical" value={gain} onChange={onGain} label="vol" />
+          <DbMeter vertical read={readMaster} mode={meterMode === 'loudness' ? 'loudness' : 'peak'} readout />
+          <Fader orientation="vertical" value={gain} onChange={onGain} label="vol" step={0.01} fmt={(v) => `${Math.round(v * 100)}%`} />
         </div>
-        <p className="overlay__hint">Master gain · peak meter. Loudness + color-zone metering land in Phase B.</p>
+        <p className="overlay__hint">
+          {meterMode === 'loudness'
+            ? 'Loudness bar ≈ EBU R128, reference −18 LUFS (lightweight meter).'
+            : 'Peak meter: three-color zones (ГОСТ Р МЭК 60268-18), hold line 2.8 s.'}
+        </p>
       </div>
     </>
   );

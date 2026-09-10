@@ -1,5 +1,5 @@
 import { useUi } from '../../store/ui';
-import { useSettings, type Theme, type LatencyPreset, type Density } from '../../store/settings';
+import { useSettings, type Theme, type LatencyPreset, type Density, type MeterMode } from '../../store/settings';
 import { getEngine } from '../../audio/engine';
 import { getHinge } from '../../bridge/bind';
 
@@ -45,6 +45,14 @@ export function SettingsModal() {
           <select value={settings.density} onChange={(e) => set({ density: e.target.value as Density })}>
             <option value="comfort">Comfort</option>
             <option value="dense">Dense</option>
+          </select>
+        </label>
+
+        <label className="modal__row">
+          Master meter
+          <select value={settings.meterMode} onChange={(e) => set({ meterMode: e.target.value as MeterMode })}>
+            <option value="ppm">PPM (peak)</option>
+            <option value="loudness">Loudness (−18 LUFS)</option>
           </select>
         </label>
 

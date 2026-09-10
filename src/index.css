@@ -190,11 +190,21 @@ body {
 .row span { min-width: 3.5ch; text-align: right; font-variant-numeric: tabular-nums; }
 .row--btns { gap: 0.5rem; }
 
-/* Meters */
-.meter { background: #12141a; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+/* Meters (UI-REDESIGN §7: ГОСТ Р МЭК 60268-18 zones + hold line) */
+.meter { position: relative; background: #12141a; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
 .meter--v { width: 14px; height: 90px; display: flex; align-items: flex-end; }
 .meter--h { height: 12px; width: 100%; }
 .meter__fill { transition: none; }
+.meter__hold {
+  position: absolute; left: 0; right: 0; height: 2px;
+  background: #f5f5f4; opacity: 0.85; pointer-events: none;
+}
+.dbmeter { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.dbmeter__readout { font-size: 0.62rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dbmeter[data-mode='loudness'] .meter__tick {
+  position: absolute; left: 0; right: 0; bottom: 55%; height: 1px;
+  background: #f5f5f4; opacity: 0.7; pointer-events: none;
+}
 
 /* Waveform */
 .wavethumb { width: 100%; height: 64px; border-radius: 6px; background: #12141a; display: block; }
@@ -253,6 +263,7 @@ body {
 .fader--vertical .fader__thumb { left: 50%; bottom: 0; }
 .fader--horizontal .fader__thumb { top: 50%; left: 0; transform: translate(-50%, -50%); }
 .fader__label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; }
+.fader__value { font-size: 0.66rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* Transport additions */
 .transport__tap { min-height: 44px; font-weight: 700; }
@@ -292,6 +303,7 @@ body {
   border: 1px solid var(--line);
   border-radius: 10px;
 }
+.mixer__strip + .mixer__strip { margin-left: 0.25rem; }
 .mixer__head {
   font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
   color: var(--c);
@@ -551,6 +563,7 @@ body {
 .deck__eq-value { font-size: 0.65rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .deck__xfade-wrap { display: flex; align-items: center; gap: 0.5rem; }
 .deck__xfade-side { font-size: 0.75rem; font-weight: 700; color: var(--muted); width: 1.5ch; text-align: center; }
+.deck__xfade-value { font-size: 0.7rem; color: var(--muted); font-variant-numeric: tabular-nums; width: 4ch; }
 .deck__xfade {
   position: relative; flex: 1; height: 48px;
   background: var(--bg); border: 1px solid var(--line); border-radius: 24px;
