@@ -141,8 +141,10 @@ export function bindBridge(): BridgeUnsub {
     }),
     bridgeBus.on('hinge', (ev) => {
       const prev = useUi.getState().mode;
-      const next = angleToModeHysteresis(ev.angle, prev);
-      useUi.getState().setMode(next);
+      // 'studio' owns the open-laptop band: treat it as the bridge's 'laptop'.
+      const bridgePrev = prev === 'studio' ? 'laptop' : prev;
+      const next = angleToModeHysteresis(ev.angle, bridgePrev);
+      useUi.getState().setMode(next === 'laptop' ? 'studio' : next);
       useUi.getState().setHinge(ev.angle);
     }),
     e.transport.subscribe((s) => onTransportChange(s.playing)),

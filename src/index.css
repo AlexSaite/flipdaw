@@ -34,7 +34,13 @@ body {
   user-select: none;
 }
 
-.laptop { display: flex; flex-direction: column; height: 100%; }
+.laptop {
+  display: flex; flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y; /* whole station scrolls; nested pan-x boards handle sideways */
+}
 
 .transport {
   display: flex; align-items: center; gap: 1rem;
@@ -81,7 +87,12 @@ body {
 }
 .seg--follow .seg-btn { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
 
-.laptop__main { flex: 1; display: flex; min-height: 0; }
+.laptop__main {
+  flex: 1 0 auto;
+  min-height: 60vh;
+  display: flex;
+  min-width: 0;
+}
 .laptop__left { flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; }
 .laptop__loading { color: var(--muted); }
 
@@ -571,3 +582,128 @@ body {
 .toast--success { border-color: #14b8a6; }
 .toast--error { border-color: #ef4444; }
 .toast--info { border-color: #60a5fa; }
+
+/* Studio layout (UI-REDESIGN §3-6) */
+.studio {
+  display: flex; flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+.studio__body { display: flex; flex-direction: column; flex: 1 0 auto; min-height: 0; }
+
+/* Deck dock: live previews, tap to expand, horizontal swipe scroll */
+.deckdock {
+  display: flex; gap: 0.6rem; align-items: flex-end;
+  padding: 0.5rem 1rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+}
+.deckdock__card {
+  flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  min-width: 104px; padding: 6px 8px;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--line); border-radius: 12px;
+  touch-action: pan-x;
+  cursor: pointer;
+}
+.deckdock__card.is-active { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 1px; }
+.deckdock__prev { display: flex; align-items: center; justify-content: center; height: 64px; }
+.deckdock__label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+.deckdock__card.is-active .deckdock__label { color: var(--accent); }
+
+/* Live previews */
+.pvdrum { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 3px; }
+.pvdrum__row { display: grid; gap: 2px; }
+.pvdrum__pad { width: 10px; height: 10px; border-radius: 2px; background: var(--bg); border: 1px solid var(--line); }
+.pvdrum__pad.is-on { background: currentColor; border-color: currentColor; }
+.pvdrum__headbar { position: absolute; top: 3px; bottom: 3px; width: 2px; background: #fff; opacity: 0.85; pointer-events: none; z-index: 2; }
+
+.pvkeys { position: relative; display: flex; width: 132px; height: 52px; border-radius: 6px; overflow: hidden; }
+.pvkeys__w { position: relative; flex: 1; min-width: 0; background: #dfe3ea; border: 1px solid var(--line); }
+.pvkeys__w.is-on { background: var(--accent); }
+.pvkeys__b { position: absolute; top: 0; height: 58%; z-index: 2; background: #14161a; border: 1px solid #000; border-radius: 0 0 3px 3px; }
+.pvkeys__b.is-on { background: var(--accent); }
+
+.pvpad-grid { display: grid; grid-template-columns: repeat(4, 22px); grid-auto-rows: 22px; gap: 4px; }
+.pvpad {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--muted);
+  background: var(--bg); border: 1px dashed var(--line); border-radius: 5px;
+}
+.pvpad.has { border: 1px solid var(--accent); }
+.pvpad-meta { grid-column: 1 / -1; font-size: 10px; color: var(--muted); text-align: center; white-space: nowrap; }
+
+.pvdj { display: flex; align-items: center; gap: 6px; width: 156px; }
+.pvdj__chan {
+  display: flex; align-items: center; justify-content: center;
+  width: 38px; height: 26px; border-radius: 5px;
+  font-size: 0.7rem; font-weight: 700; color: var(--muted);
+  background: var(--bg); border: 1px solid var(--line);
+}
+.pvdj__chan.is-on { background: var(--accent); border-color: var(--accent); color: #0e1013; }
+.pvdj__fader { position: relative; flex: 1; height: 22px; background: var(--bg); border: 1px solid var(--line); border-radius: 11px; }
+.pvdj__thumb { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 12px; height: 12px; border-radius: 50%; background: var(--accent); }
+
+.pvgrid { display: flex; gap: 3px; padding: 3px; }
+.pvgrid__col { display: flex; flex-direction: column; gap: 3px; }
+.pvcell { width: 10px; height: 10px; border-radius: 2px; background: var(--bg); border: 1px solid var(--line); }
+.pvcell.has { background: currentColor; border-color: currentColor; }
+
+/* Workspace: one expanded deck, container for Phase B sizing */
+.studio__workspace {
+  flex: 1 0 auto; min-height: 0; min-width: 0;
+  display: flex; flex-direction: column;
+  container-type: inline-size;
+  container-name: studio;
+}
+.studio__deckhead {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.4rem 1rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.studio__decklabel { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.studio__deckbody { flex: 1 0 auto; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; touch-action: pan-y; }
+.studio__gridwrap { display: flex; min-height: 100%; }
+.studio__gridleft { flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; padding: 0.5rem; }
+
+/* Footer: secondary-control entry points */
+.studio__footer {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.4rem 1rem;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+}
+
+/* Translucent overlay (UI-REDESIGN §4) */
+.overlay-backdrop {
+  position: fixed; inset: 0; z-index: 400;
+  background: color-mix(in srgb, var(--bg) 20%, transparent);
+  display: flex; justify-content: flex-end; align-items: stretch;
+  touch-action: none;
+}
+.overlay {
+  width: min(440px, 100vw);
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-left: 1px solid var(--line);
+  display: flex; flex-direction: column;
+  gap: 0.9rem; padding: 1rem;
+  overflow-y: auto;
+}
+.overlay__title { margin: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.overlay__hint { margin: 0; font-size: 0.78rem; color: var(--muted); }
+.mixer--overlay { position: static; flex: 1; min-height: 0; height: auto; padding: 0 0 0.5rem; }
+.studio__master { display: flex; gap: 1rem; align-items: flex-start; }
+.mixer__strip--master { min-width: 120px; }
+.mixer__strip--master .meter { height: 180px; }
+
+@media (max-width: 640px) {
+  .overlay-backdrop { justify-content: center; align-items: flex-end; }
+  .overlay { width: 100vw; border-left: none; border-top: 1px solid var(--line); max-height: 82vh; }
+}

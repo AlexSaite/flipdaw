@@ -1,6 +1,6 @@
 import { useUi, type LayoutMode } from '../../store/ui';
 
-const MODES: LayoutMode[] = ['laptop', 'tent', 'mixer'];
+const MODES: LayoutMode[] = ['studio', 'tent', 'mixer', 'laptop'];
 
 /** Slim always-available layout switcher — lets the user leave tent/mixer. */
 export function LayoutNav() {
@@ -13,7 +13,7 @@ export function LayoutNav() {
           {m}
         </button>
       ))}
-      <span className="layout-nav__hint">keys 1/2/3</span>
+      <span className="layout-nav__hint">keys 1/2/3/4</span>
     </div>
   );
 }

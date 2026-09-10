@@ -7,7 +7,7 @@ import { getEngine } from '../../audio/engine';
 import type { Quantize } from '../../audio/transport';
 
 const Q: Quantize[] = ['off', '1/4', '1/2', '1bar', '2bar'];
-const MODES: LayoutMode[] = ['laptop', 'tent', 'mixer'];
+const MODES: LayoutMode[] = ['studio', 'tent', 'mixer', 'laptop'];
 
 export function TransportBar() {
   const playing = useTransport((s) => s.playing);

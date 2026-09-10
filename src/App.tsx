@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { StudioLayout } from './ui/layouts/StudioLayout';
 import { LaptopLayout } from './ui/layouts/LaptopLayout';
 import { TentLayout } from './ui/layouts/TentLayout';
 import { MixerLayout } from './ui/layouts/MixerLayout';
@@ -12,7 +13,7 @@ import { getEngine } from './audio/engine';
 import { subscribeTransportToEngine } from './store/transport';
 import { bindBridge } from './bridge/bind';
 
-const MODE_KEYS: Record<string, LayoutMode> = { '1': 'laptop', '2': 'tent', '3': 'mixer' };
+const MODE_KEYS: Record<string, LayoutMode> = { '1': 'studio', '2': 'tent', '3': 'mixer', '4': 'laptop' };
 
 function App() {
   const mode = useUi((s) => s.mode);
@@ -71,6 +72,7 @@ function App() {
 
   return (
     <>
+      {mode === 'studio' && <StudioLayout />}
       {mode === 'laptop' && <LaptopLayout />}
       {mode === 'tent' && <TentLayout />}
       {mode === 'mixer' && <MixerLayout />}
