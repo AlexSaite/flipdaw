@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "FlipDAW",
-  "version": "0.9.5",
+  "version": "0.10.0",
   "identifier": "dev.flipdaw.app",
   "build": {
     "frontendDist": "../dist",
@@ -44,7 +44,7 @@
         "type": "downloadBootstrapper"
       },
       "nsis": {
-        "installMode": "perMachine"
+        "installMode": "currentUser"
       }
     },
     "shortDescription": "Touch-first loop station",
