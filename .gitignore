@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Desktop shell build output (Tauri)
+src-tauri/target
+src-tauri/gen
+
+# Local experiments (card art, scratch decks)
+experiment/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

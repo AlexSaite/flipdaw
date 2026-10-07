@@ -1,7 +1,7 @@
 import { useGrid } from '../../store/project';
-import { createBrowserFsAdapter } from '../../project/fsAdapter';
+import { createFsAdapter } from '../../project/fsAdapter';
 
-const adapter = createBrowserFsAdapter();
+const adapter = createFsAdapter();
 
 export function ProjectBar() {
   const projectName = useGrid((s) => s.projectName);

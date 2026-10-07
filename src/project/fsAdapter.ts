@@ -4,6 +4,8 @@
  * The app only talks to DirHandle/FsAdapter, never to a specific backend.
  */
 
+import { createTauriFsAdapter, isTauri } from './tauriFs';
+
 export interface DirHandle {
   readonly name: string;
   readText(rel: string): Promise<string | null>;
@@ -83,6 +85,16 @@ export function createBrowserFsAdapter(): FsAdapter {
       localStorage.setItem('flipdaw.recent', JSON.stringify(next));
     },
   };
+}
+
+/**
+ * Adapter for the running host (ADR-003): Tauri shell -> app-data folders + native
+ * dialog, plain browser -> File System Access API. Kept out of fsAdapter.ts so this
+ * module stays dependency-free and importable from Node tests.
+ */
+export function createFsAdapter(): FsAdapter {
+  const tauri = isTauri();
+  return tauri ? createTauriFsAdapter() : createBrowserFsAdapter();
 }
 
 /* ---- Browser File System Access handles (minimal structural typing) ---- */
