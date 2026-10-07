@@ -30,11 +30,12 @@ async function core(): Promise<Invoke> {
   return invoke;
 }
 
-async function openFolderDialog(title = 'Select a FlipDAW project folder'): Promise<string | null> {
-  if (openFn) return openFn({ directory: true, multiple: false, title });
-  const mod = await import('@tauri-apps/plugin-dialog');
-  const picked = await mod.open({ directory: true, multiple: false, title });
-  return typeof picked === 'string' ? picked : null;
+async function openFolderDialog(startDir?: string): Promise<string | null> {
+  if (openFn) return openFn({ directory: true, multiple: false, title: 'Select a FlipDAW project folder' });
+  const call = await core();
+  // The Rust side owns the picker: only a folder the user actually chose becomes a
+  // trusted root, so a compromised renderer cannot register arbitrary paths.
+  return call<string | null>('pick_folder', { startDir: startDir ?? null });
 }
 
 /** Absolute path of the app data folder (created on demand by the Rust side). */
@@ -61,10 +62,27 @@ function isMissing(err: unknown): boolean {
   return s.includes('not found') || s.includes('cannot find') || s.includes('enoent');
 }
 
+/** Binary payloads cross IPC as base64 (a byte array for a 10 MB WAV would be enormous). */
+function toBase64(bytes: Uint8Array): string {
+  let s = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    s += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(s);
+}
+
+function fromBase64(text: string): Uint8Array {
+  const bin = atob(text);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
 /**
  * Folder outside the sandbox, reached through the native folder picker.
- * The Rust side serves these paths verbatim — they only ever come from a user gesture,
- * and the app never runs remote code, so the picked folder is the trust boundary.
+ * Access is granted by the Rust side for the current session only: `external_*` commands
+ * reject anything outside a folder the user picked, and the web layer cannot add roots.
  */
 export class ExternalDir implements DirHandle {
   readonly name: string;
@@ -83,8 +101,8 @@ export class ExternalDir implements DirHandle {
   async readBinary(rel: string): Promise<Uint8Array | null> {
     const call = await core();
     try {
-      const raw = await call<number[] | null>('external_read', { path: join(this.root, rel) });
-      return raw === null ? null : new Uint8Array(raw);
+      const raw = await call<string | null>('external_read', { path: join(this.root, rel) });
+      return raw === null ? null : fromBase64(raw);
     } catch (err) {
       if (isMissing(err)) return null;
       throw err;
@@ -92,7 +110,7 @@ export class ExternalDir implements DirHandle {
   }
   async writeBinary(rel: string, data: Uint8Array): Promise<void> {
     const call = await core();
-    await call('external_write', { path: join(this.root, rel), contents: Array.from(data) });
+    await call('external_write', { path: join(this.root, rel), contents: toBase64(data) });
   }
   async exists(rel: string): Promise<boolean> {
     const call = await core();
@@ -123,12 +141,12 @@ class AppDataDir implements DirHandle {
   }
   async readBinary(rel: string): Promise<Uint8Array | null> {
     const call = await core();
-    const raw = await call<number[] | null>('read_binary', { path: join(this.rel, rel) });
-    return raw === null ? null : new Uint8Array(raw);
+    const raw = await call<string | null>('read_binary', { path: join(this.rel, rel) });
+    return raw === null ? null : fromBase64(raw);
   }
   async writeBinary(rel: string, data: Uint8Array): Promise<void> {
     const call = await core();
-    await call('write_binary', { path: join(this.rel, rel), contents: Array.from(data) });
+    await call('write_binary', { path: join(this.rel, rel), contents: toBase64(data) });
   }
   async exists(rel: string): Promise<boolean> {
     const call = await core();

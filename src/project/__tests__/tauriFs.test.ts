@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { __setTauriBridge, createTauriFsAdapter, listStoredProjects } from '../tauriFs';
 
-/** In-memory stand-in for the Rust fs commands. */
+/** In-memory stand-in for the Rust fs commands (binary payloads travel as base64). */
 function fakeInvoke() {
-  const files = new Map<string, string | number[]>();
+  const files = new Map<string, string>();
   const dirs = new Set<string>(['projects']);
   const calls: string[] = [];
   const invoke = async <T>(cmd: string, args?: Record<string, unknown>): Promise<T> => {
@@ -12,19 +12,12 @@ function fakeInvoke() {
     switch (cmd) {
       case 'app_data_dir':
         return 'C:/AppData/dev.flipdaw.app' as T;
-      case 'read_text': {
-        const v = files.get(path);
-        return (v === undefined ? null : String(v)) as T;
-      }
+      case 'read_text':
+      case 'read_binary':
+        return (files.has(path) ? files.get(path)! : null) as T;
       case 'write_text':
-        files.set(path, String(args?.contents));
-        return undefined as T;
-      case 'read_binary': {
-        const v = files.get(path);
-        return (v === undefined ? null : (Array.isArray(v) ? v : [...String(v).split('').map((c) => c.charCodeAt(0))])) as T;
-      }
       case 'write_binary':
-        files.set(path, args?.contents as number[]);
+        files.set(path, String(args?.contents));
         return undefined as T;
       case 'exists':
         return files.has(path) as T;
@@ -36,13 +29,12 @@ function fakeInvoke() {
           .filter((v, i, a) => a.indexOf(v) === i)
           .sort() as T;
       }
-      case 'external_read': {
-        const v = files.get(path);
-        if (v === undefined) return null as T;
-        return (Array.isArray(v) ? v : [...String(v).split('').map((c) => c.charCodeAt(0))]) as T;
-      }
+      case 'pick_folder':
+        return (args?.startDir as string | null) as T;
+      case 'external_read':
+        return (files.has(path) ? files.get(path)! : null) as T;
       case 'external_write':
-        files.set(path, args?.contents as number[]);
+        files.set(path, String(args?.contents));
         return undefined as T;
       case 'external_exists':
         return files.has(path) as T;

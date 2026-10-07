@@ -252,6 +252,125 @@ function scanGitHistory(): Finding[] {
   return findings;
 }
 
+/**
+ * Supply-chain guards for the desktop shell: dependency provenance, install hooks,
+ * Cargo sources, committed secrets and dangerous sinks in our own renderer code.
+ */
+function scanSupplyChain(): Finding[] {
+  const findings: Finding[] = [];
+  const root = process.cwd();
+
+  // 1. npm: only the official registry, and no git/URL dependencies.
+  const lockPath = join(root, 'package.json');
+  if (existsSync(lockPath)) {
+    const pkg = JSON.parse(readFileSync(lockPath, 'utf8')) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
+    for (const group of [pkg.dependencies, pkg.devDependencies]) {
+      for (const [name, spec] of Object.entries(group ?? {})) {
+        if (/^(git|github|https?|file|link):/i.test(spec) || spec.includes('/')) {
+          findings.push({
+            severity: 'HIGH',
+            category: 'NON_REGISTRY_DEPENDENCY',
+            message: `${name} is not a pinned registry version: "${spec}"`,
+          });
+        }
+      }
+    }
+  }
+
+  const cargoLock = join(root, 'src-tauri', 'Cargo.lock');
+  if (existsSync(cargoLock)) {
+    const lock = readFileSync(cargoLock, 'utf8');
+    for (const m of lock.matchAll(/^source = "(.+)"$/gm)) {
+      if (!m[1].startsWith('registry+https://github.com/rust-lang/crates.io-index')) {
+        findings.push({
+          severity: 'CRITICAL',
+          category: 'UNTRUSTED_CRATE_SOURCE',
+          message: `Crate resolved from an unexpected source: ${m[1]}`,
+          file: 'src-tauri/Cargo.lock',
+        });
+      }
+    }
+  }
+
+  // 2. Renderer: no HTML/eval sinks that would defeat the CSP.
+  const dangerousSinks = [
+    { re: /dangerouslySetInnerHTML/, label: 'dangerouslySetInnerHTML' },
+    { re: /\.innerHTML\s*=/, label: 'innerHTML assignment' },
+    { re: /\beval\s*\(/, label: 'eval()' },
+    { re: /new\s+Function\s*\(/, label: 'new Function()' },
+    { re: /document\.write\s*\(/, label: 'document.write()' },
+  ];
+  const srcRoot = join(root, 'src');
+  if (existsSync(srcRoot)) {
+    const walkSources = (dir: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walkSources(full);
+        } else if (/\.(ts|tsx)$/.test(entry.name)) {
+          const lines = readFileSync(full, 'utf8').split('\n');
+          lines.forEach((line, i) => {
+            for (const sink of dangerousSinks) {
+              if (sink.re.test(line)) {
+                findings.push({
+                  severity: 'HIGH',
+                  category: 'DANGEROUS_SINK',
+                  message: `${sink.label} in renderer code — this would bypass the CSP`,
+                  file: relative(root, full),
+                  line: i + 1,
+                });
+              }
+            }
+          });
+        }
+      }
+    };
+    walkSources(srcRoot);
+  }
+
+  // 3. Committed secrets in tracked files.
+  const secretPatterns: { re: RegExp; label: string }[] = [
+    { re: /AKIA[0-9A-Z]{16}/, label: 'AWS access key' },
+    { re: /gh[pousr]_[A-Za-z0-9]{30,}/, label: 'GitHub token' },
+    { re: /xox[baprs]-[A-Za-z0-9-]{10,}/, label: 'Slack token' },
+    { re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/, label: 'private key' },
+  ];
+  try {
+    const tracked = execSync('git ls-files -z', { encoding: 'buffer', cwd: root })
+      .toString('utf8')
+      .split('\0')
+      .filter(Boolean);
+    for (const rel of tracked) {
+      const full = join(root, rel);
+      if (!existsSync(full)) continue;
+      let content: string;
+      try {
+        content = readFileSync(full, 'utf8');
+      } catch {
+        continue;
+      }
+      if (content.includes('\0')) continue;
+      for (const { re, label } of secretPatterns) {
+        if (re.test(content)) {
+          findings.push({
+            severity: 'CRITICAL',
+            category: 'COMMITTED_SECRET',
+            message: `${label} committed in ${rel}`,
+            file: rel,
+          });
+        }
+      }
+    }
+  } catch {
+    // Git not available or not a repo.
+  }
+
+  return findings;
+}
+
 function printFindings(findings: Finding[]): void {
   if (findings.length === 0) {
     console.log('\n✅ No security issues found.\n');
@@ -295,6 +414,7 @@ const findings: Finding[] = [
   ...scanDirectory(process.cwd(), ioc),
   ...scanAgentConfigs(),
   ...scanGitHistory(),
+  ...scanSupplyChain(),
 ];
 
 printFindings(findings);
