@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/screenshots/icon-1024.png" width="128" alt="FlipDAW">
+</p>
+
 # FlipDAW
 
 **Touch-first DAW / loop station for Windows laptops and 2-in-1 devices.**
@@ -5,6 +9,9 @@ The whole studio is a grid of pads — tap a module to bring it to the front, ad
 one side by side, or expand it to fullscreen.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/AlexSaite/flipdaw?label=release)](https://github.com/AlexSaite/flipdaw/releases/latest)
+[![Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-0078d6?logo=windows)](https://github.com/AlexSaite/flipdaw/releases/latest)
+[![Telemetry](https://img.shields.io/badge/telemetry-none-35d07f)](https://github.com/AlexSaite/flipdaw/blob/main/SECURITY.md)
 
 ![Studio home — the pad grid](docs/screenshots/hero-studio.png)
 
