@@ -19,6 +19,13 @@ src-tauri/gen
 # Local experiments (card art, scratch decks)
 experiment/
 
+# Shareable builds (regenerate with npm run desktop:build)
+release/
+
+# Personal notes / chat transcripts — never publish these
+chat-*.txt
+*.local.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
