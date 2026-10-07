@@ -6,6 +6,24 @@ one side by side, or expand it to fullscreen.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+![Studio home — the pad grid](docs/screenshots/hero-studio.png)
+
+## Screenshots
+
+### The studio
+
+| previewPro — two live modules | Mixer |
+|---|---|
+| ![previewPro](docs/screenshots/previewpro.png) | ![Mixer](docs/screenshots/mixer.png) |
+
+### Modules
+
+| | |
+|---|---|
+| ![Clip grid](docs/screenshots/style-graffiti-grid.png) | ![16-step drum machine](docs/screenshots/style-hardrock-drums.png) |
+| ![Pad sampler](docs/screenshots/style-metal-sampler.png) | ![Polyphonic keys](docs/screenshots/style-rnb-keys.png) |
+| ![DJ decks](docs/screenshots/style-jazz-dj.png) | ![Vinyl turntable](docs/screenshots/style-classic-turntable.png) |
+
 ---
 
 ## Download
