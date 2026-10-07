@@ -1,5 +1,14 @@
 # JUCE Core Spike (M5)
 
+> [!WARNING]
+> **Not covered by the repository's MIT license.** This spike links against the
+> [JUCE](https://juce.com) framework, which is dual-licensed: **GPLv3 or a paid
+> commercial license**. It is kept here as design documentation only —
+> **it is not built, not compiled and not distributed** with any FlipDAW release.
+> Do not link it into a shipped binary without a JUCE commercial license, and do not
+> treat this directory as MIT-licensed code. The shipped FlipDAW app is pure
+> Rust + WebView2 and does not use JUCE.
+
 Proof-of-concept for the future native core: host a VST3 in JUCE and speak
 JSON-lines IPC to the WebView so FlipDAW can swap engines without the UI
 noticing (ADR-010).

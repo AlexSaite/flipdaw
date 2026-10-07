@@ -91,3 +91,8 @@ npm run desktop:build    # installers in src-tauri/target/release/bundle/
 ## License
 
 [MIT](LICENSE) © FlipDAW contributors
+
+**Exception — `spike/juce-core/`:** that spike links against [JUCE](https://juce.com),
+which is dual-licensed (GPLv3 / commercial). It is design documentation only: it is never
+built or shipped with any release and is **not** covered by the MIT license above. The
+released FlipDAW app is Rust + WebView2 and does not use JUCE.

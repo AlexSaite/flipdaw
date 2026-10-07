@@ -331,12 +331,19 @@ function scanSupplyChain(): Finding[] {
     walkSources(srcRoot);
   }
 
-  // 3. Committed secrets in tracked files.
+  // 3. Committed secrets and personal data in tracked files.
   const secretPatterns: { re: RegExp; label: string }[] = [
     { re: /AKIA[0-9A-Z]{16}/, label: 'AWS access key' },
     { re: /gh[pousr]_[A-Za-z0-9]{30,}/, label: 'GitHub token' },
     { re: /xox[baprs]-[A-Za-z0-9-]{10,}/, label: 'Slack token' },
     { re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/, label: 'private key' },
+  ];
+  // Anything that ties the build machine to the person publishing it. The app itself has
+  // no such data, so a hit means a local path or contact slipped into a commit.
+  const privacyPatterns: { re: RegExp; label: string; docsOnly?: boolean }[] = [
+    { re: /[A-Za-z]:\\Users\\[^\\\s"']+/gi, label: 'absolute user home path' },
+    { re: /\/home\/[a-z0-9._-]+\//g, label: 'absolute home directory path' },
+    { re: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, label: 'email address', docsOnly: true },
   ];
   try {
     const tracked = execSync('git ls-files -z', { encoding: 'buffer', cwd: root })
@@ -359,6 +366,19 @@ function scanSupplyChain(): Finding[] {
             severity: 'CRITICAL',
             category: 'COMMITTED_SECRET',
             message: `${label} committed in ${rel}`,
+            file: rel,
+          });
+        }
+      }
+      for (const { re, label, docsOnly } of privacyPatterns) {
+        if (docsOnly && !/\.(md|mdx|txt)$/i.test(rel)) continue;
+        re.lastIndex = 0;
+        const hit = re.exec(content);
+        if (hit) {
+          findings.push({
+            severity: 'MEDIUM',
+            category: 'PRIVACY_LEAK',
+            message: `${label} in ${rel}: ${hit[0].slice(0, 60)}`,
             file: rel,
           });
         }

@@ -1,5 +1,25 @@
 # FlipDAW Security Policy
 
+## Reporting a vulnerability
+
+Please **do not open a public issue** for security problems.
+
+Use GitHub's private reporting instead: **Security → Report a vulnerability** on this
+repository (tab "Security" in the top menu). That opens a private advisory visible only to
+the maintainer, and it works even while no email address is configured.
+
+Please include: what you found, how to reproduce it, which version you tested, and the
+impact you believe it has. We aim to acknowledge a report within a few days.
+
+## Scope
+
+- **In scope:** the desktop shell (Rust core + WebView2 frontend), the project file format
+  and its parsers, the installer/update path, and anything that could execute code or write
+  files outside the user's chosen folder.
+- **Out of scope:** vulnerabilities in upstream dependencies that have no working exploit
+  path in this app, and missing hardening in the `spike/juce-core` research prototype
+  (never built or shipped — see its README).
+
 ## Supply Chain Security
 
 FlipDAW is a local-only application with zero telemetry. However, we still face supply chain risks from npm dependencies and AI agent tooling.

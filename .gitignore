@@ -25,6 +25,14 @@ release/
 # Personal notes / chat transcripts — never publish these
 chat-*.txt
 *.local.md
+/*изучи*.md
+
+# Local scratch data (samples, drafts, tooling config)
+*.zip
+*.wav
+models/
+opencode.json
+opencode.jsonc
 
 # Editor directories and files
 .vscode/*
